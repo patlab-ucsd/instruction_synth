@@ -7,7 +7,7 @@ import sys
 def synth_sentence(text):
     os.makedirs("./tts", exist_ok=True)
     tts = gTTS(text=text, lang='en')
-    filename = f"./tts/{text}.mp3"
+    filename = f"./tts/{'_'.join(text.split())}.mp3"
     tts.save(filename)
     duration_seconds = get_duration(filename)
     print(f"the duration of: {filename}\nis {duration_seconds} seconds")
