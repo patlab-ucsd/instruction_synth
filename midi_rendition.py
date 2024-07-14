@@ -174,7 +174,7 @@ midi_file = "./midi/Mozart_12_Variations_on_Ah_vous_dirai-je_Maman_K.265.mid"
 midi_file = "./midi/My-Favorite-Things-(From-'The-Sound-Of-Music')-1.mid"
 midi_file = "./midi/MyFavoriteThings.mid"
 midi_file = "./midi/K265_cut.mid"
-midi_file = "./midi/Yankee_doodle_Saloon_style.mid"
+midi_file = "./midi/Yankee_doodle_Saloon_style_padded.mid"
 soundfont = "~/Music/FluidR3_GM/FluidR3_GM.sf2"
 
 # Convert MIDI to WAV

@@ -4,9 +4,10 @@ import ffmpeg
 from utils import *
 import sys
 
+
 def synth_sentence(text):
     os.makedirs("./tts", exist_ok=True)
-    tts = gTTS(text=text, lang='en')
+    tts = gTTS(text=text, lang='en',slow=False)
     filename = f"./tts/{'_'.join(text.split())}.mp3"
     tts.save(filename)
     duration_seconds = get_duration(filename)

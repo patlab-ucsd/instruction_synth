@@ -1,17 +1,25 @@
 from pydub import AudioSegment
+from utils import *
+import mido
 
-# Load the music and voice tracks
-music = AudioSegment.from_mp3("./music/Yankee_doodle_Saloon_style_120.mp3")
-voice = AudioSegment.from_mp3("./tts/standing still.mp3")
+def overlay_countdown(music, measure_number=None, bpm=None, count_from=None, offset=0, midifile=None):
+    """
+    add countdown starting from specified measure
+    """
+    mid = mido.MidiFile(midifile)
 
-# Define the position (in milliseconds) to overlay the voice track
-overlay_position_ms = 2.5 * 1000
+    initial_overlay_position_ms = get_measure_starts(mid)[measure_number][1]*1000
+    interval = 60000/bpm
+    for i in range(count_from, 0, -1):
+        overlay_position_ms = initial_overlay_position_ms + interval*(count_from-i)+offset
+        print("overlay at:",overlay_position_ms/1000)
+        voice = AudioSegment.from_mp3(f"./tts/{i}_trimmed.mp3")
+        music = music.overlay(voice, position=overlay_position_ms)
+    return music
 
-# Overlay the voice track onto the music track at the specified position
-combined = music.overlay(voice, position=overlay_position_ms)
-combined = combined.overlay(voice, position=overlay_position_ms*2)
-
-# Export the mixed track
-combined.export("output_combined.mp3", format="mp3")
-
-print("Mixed audio track saved as output_combined.mp3")
+def overlay_at_measure(music, voice, measure_numbers=None,midifile=None,offset=0):
+    mid = mido.MidiFile(midifile)
+    for measure_number in measure_numbers:
+        overlay_position_ms = get_measure_starts(mid)[measure_number][1]*1000+offset
+        music = music.overlay(voice, position=overlay_position_ms)
+    return music

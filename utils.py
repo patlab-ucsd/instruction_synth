@@ -2,6 +2,8 @@ from pydub import AudioSegment
 import os
 import ffmpeg
 import mido
+from pydub import AudioSegment
+from pydub.silence import detect_leading_silence
 from bisect import bisect_right
 from dataclasses import dataclass, asdict
 
@@ -28,6 +30,26 @@ def get_duration(filename):
     """
     duration_seconds = ffmpeg.probe(filename)['format']['duration']
     return duration_seconds
+
+def trim_silence(audio_segment,silence_threshold=-30.0):
+    trim_leading_silence = lambda x: x[detect_leading_silence(x,silence_threshold=silence_threshold) :]
+    trim_trailing_silence = lambda x: trim_leading_silence(x.reverse()).reverse()
+    strip_silence = lambda x: trim_trailing_silence(trim_leading_silence(x))
+
+    stripped = strip_silence(audio_segment)
+    return stripped
+
+def speedup_audio_file(filename, speedup_factor):
+    file_extension = os.path.splitext(filename)[1]
+    audio = load_audio(filename)
+
+    audio_speedup = audio.speedup(playback_speed=speedup_factor)
+
+    #save to the same place with new name
+    export_filename = f"{os.path.splitext(filename)[0]}_{speedup_factor}{file_extension}"
+    audio_speedup.export(export_filename, format=file_extension.lower()[1:])
+
+    print(f"{filename} sped up successfully.")
 
 def ticks_to_seconds(ticks, ticks_per_beat, microseconds_per_beat):
     """
@@ -59,7 +81,7 @@ def get_measure_starts(mid):
     get the starting time given measure number
     assumes varying tempo
 
-    returns: a dict of measure start time in ticks and seconds
+    returns: a dict of measure start time (indexed by measure number, starting from 1), in ticks and seconds
     """
 
     time_signature_changes = [] #numerator, denominator, tick, seconds
@@ -92,7 +114,7 @@ def get_measure_starts(mid):
     measure_count = 0
     for i in range(len(time_signature_changes)-1):
         numerator, denominator, current_tick, current_time_in_seconds = time_signature_changes[i]
-        print(current_time_in_seconds)
+        #print(current_time_in_seconds)
         _, _, next_tick, next_time_in_seconds = time_signature_changes[i+1]
         #ticks_per_measure = numerator * mid.ticks_per_beat * 4 // denominator
         ticks_per_measure = int (numerator * mid.ticks_per_beat * 4 / denominator)
@@ -104,7 +126,26 @@ def get_measure_starts(mid):
             measure_starts_dict[measure_count] = (measure_start_tick,measure_start_seconds)
     return measure_starts_dict
 
+if __name__ == "__main__":
+    """
+    mid = mido.MidiFile("./midi/Yankee_doodle_Saloon_style_100.mid")
+    mid = mido.MidiFile("./midi/test.mid")
+    print(get_measure_starts(mid))
 
-mid = mido.MidiFile("./midi/Yankee_doodle_Saloon_style_100.mid")
-mid = mido.MidiFile("./midi/test.mid")
-print(get_measure_starts(mid))
+    speed_up_factor=1.5
+    for i in range(1,5):
+        speedup_audio_file(f"./tts/{i}.mp3",speed_up_factor)
+        audio = AudioSegment.from_mp3(f"./tts/{i}_{speed_up_factor}.mp3")
+        audio = trim_silence(audio)
+        audio.export(f"./tts/{i}_trimmed.mp3", format="mp3")
+    """
+
+    tts_word = "moving"
+    audio = AudioSegment.from_mp3(f"./tts/{tts_word}.mp3")
+    audio = trim_silence(audio)
+    audio.export(f"./tts/{tts_word}.mp3", format="mp3")
+
+    tts_word = "stop"
+    audio = AudioSegment.from_mp3(f"./tts/{tts_word}.mp3")
+    audio = trim_silence(audio)
+    audio.export(f"./tts/{tts_word}.mp3", format="mp3")
