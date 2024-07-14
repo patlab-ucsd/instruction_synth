@@ -28,7 +28,7 @@ def get_duration(filename):
     """
     returns the duration of the audio in seconds
     """
-    duration_seconds = ffmpeg.probe(filename)['format']['duration']
+    duration_seconds = float(ffmpeg.probe(filename)['format']['duration'])
     return duration_seconds
 
 def trim_silence(audio_segment,silence_threshold=-30.0):
