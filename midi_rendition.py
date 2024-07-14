@@ -14,10 +14,12 @@ def examine_midi_msg(midi_file):
                 if "note" not in msg.type:
                     print(msg)
 
-def generate_mp3_simple(midi_file, mp3_file, soundfont):
+def generate_mp3_simple(midi_file, soundfont):
     """
-    render midi plainly
+    render midi from ./midi folder and save the mp3 file to ./music folder
     """
+    mp3_file = f"{midi_file.replace('/midi/', '/music/')[:-4]}.mp3"
+
     fluidsynth = FluidSynth(soundfont)
     # render in wav
     wav_filename = f"{midi_file[:-4]}.wav"
@@ -126,6 +128,7 @@ def midi_add_simple_drum(midi_file, perc_inst = "woodblock"):
             else:
                 strong_beat_interval = denominator
             note_count = 0
+            # add percussion at each beat
             for time in range(current_tick, next_tick, ticks_per_note):
                 if note_count%strong_beat_interval==0:
                     note_on_vel = 90
@@ -162,17 +165,17 @@ def generate_mp3(midi_file, bpm = 100, soundfont = None, inst = "nylon-guitar", 
     #adjusted_midi_file = midi_file
     adjusted_midi_file =  midi_adjust_tempo_inst(midi_file, bpm = bpm, soundfont = soundfont, inst = inst, save_midi = save_midi)
     adjusted_midi_file = midi_add_simple_drum(adjusted_midi_file, perc_inst = perc_inst)
-    mp3_file = f"./music/{os.path.split(os.path.splitext(midi_file)[0])[-1]}_{bpm}.mp3"
-    generate_mp3_simple(adjusted_midi_file,mp3_file,soundfont)
+    generate_mp3_simple(adjusted_midi_file,soundfont)
 
 # Define paths and filenames
-#midi_file = "./midi/Yankee_doodle_Saloon_style.mid"  
 #midi_file = "./midi/Mary_had_a_Little_Lamb_-_variations_through_time.mid"
 #midi_file = "./midi/London_Bridge_Is_Falling_Down.mid"
 midi_file = "./midi/Mozart_12_Variations_on_Ah_vous_dirai-je_Maman_K.265.mid"
 midi_file = "./midi/My-Favorite-Things-(From-'The-Sound-Of-Music')-1.mid"
 midi_file = "./midi/MyFavoriteThings.mid"
-soundfont = "~/Music/FluidR3_GM/FluidR3_GM.sf2" 
+midi_file = "./midi/K265_cut.mid"
+midi_file = "./midi/Yankee_doodle_Saloon_style.mid"
+soundfont = "~/Music/FluidR3_GM/FluidR3_GM.sf2"
 
 # Convert MIDI to WAV
 #wav_file = midi_to_mp3(midi_file, mp3_file, soundfont)
@@ -191,5 +194,5 @@ insts = {"e-piano1":4,
          "woodblock":115,
          "taiko":116,
          "synthdrum":118}
-generate_mp3(midi_file, bpm = 120, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", save_midi = True)
+generate_mp3(midi_file, bpm = 100, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", save_midi = True)
 #examine_midi_msg("./midi/Yankee_doodle_Saloon_style_100_added.mid")
