@@ -4,7 +4,7 @@ import mido
 from overlay import *
 from moviepy.editor import *
 
-def annotate_measure_info(text, starting_measure, ending_measure):
+def annotate_measure_info(text, starting_measure, ending_measure, measures_info = dict()):
     """
     annotate measure info for each measure [starting_measure, ending_measure] (inclusive)
     """
@@ -15,7 +15,7 @@ def annotate_measure_info(text, starting_measure, ending_measure):
             ending_time = total_audio_duration
         measures_info[measure] = {"text":text,"starting_time":measure_starts[measure][1],"ending_time":ending_time}
 
-def overlay_instruction(music, text=None, measure_numbers=None,offset=0, instruction_duration_in_measures = 1):
+def overlay_instruction(music, text=None, measure_numbers=[],offset=0, instruction_duration_in_measures = 1, measures_info = dict()):
     """
     overlay tts instruction at selected measures
     """
@@ -23,7 +23,7 @@ def overlay_instruction(music, text=None, measure_numbers=None,offset=0, instruc
     music = overlay_at_measure(music,voice,measure_numbers=measure_numbers, midifile = midifile, offset=offset)
     # record the time info
     for starting_measure in measure_numbers:
-        annotate_measure_info(text, starting_measure, starting_measure+instruction_duration_in_measures-1)
+        annotate_measure_info(text, starting_measure, starting_measure+instruction_duration_in_measures-1, measures_info=measures_info)
     return music
 
 def video_from_measures_info(measures_info, videofile = None, audiofile = None):
@@ -85,22 +85,22 @@ print("total number of measures",total_measures_count,"total duration",total_aud
 measures_info = dict() #global
 
 # overlay countdown
-music = overlay_countdown(music, midifile=midifile,measure_number=8,bpm=bpm,count_from=4,offset=-20)
-music = overlay_countdown(music, midifile=midifile,measure_number=26,bpm=bpm,count_from=4,offset=-20)
-music = overlay_countdown(music, midifile=midifile,measure_number=44,bpm=bpm,count_from=4,offset=-20)
-music = overlay_countdown(music, midifile=midifile,measure_number=62,bpm=bpm,count_from=4,offset=-20)
+music = overlay_countdown(music, midifile=midifile,start_measure=8,bpm=bpm,count_from=4,offset=-20)
+music = overlay_countdown(music, midifile=midifile,start_measure=26,bpm=bpm,count_from=4,offset=-20)
+music = overlay_countdown(music, midifile=midifile,start_measure=44,bpm=bpm,count_from=4,offset=-20)
+music = overlay_countdown(music, midifile=midifile,start_measure=62,bpm=bpm,count_from=4,offset=-20)
 
 # overlay instructions
-music = overlay_instruction(music, text="moving", measure_numbers = [1,3,5])
-music = overlay_instruction(music, text="stop", measure_numbers = [2,4,6],offset=-20)
-music = overlay_instruction(music, text="get_ready_to_walk_forward", measure_numbers = [7], instruction_duration_in_measures=2)
-annotate_measure_info("walking_forward",9,24)
-music = overlay_instruction(music, text="get_ready_to_run_forward", measure_numbers = [25], instruction_duration_in_measures=2)
-annotate_measure_info("running_forward",27,42)
-music = overlay_instruction(music, text="get_ready_to_walk_forward", measure_numbers = [43], instruction_duration_in_measures=2)
-annotate_measure_info("walking_forward",45,60)
-music = overlay_instruction(music, text="get_ready_to_stand_still", measure_numbers = [61], instruction_duration_in_measures=2)
-annotate_measure_info("standing_still",63,78)
+music = overlay_instruction(music, text="moving", measure_numbers = [1,3,5],measures_info=measures_info)
+music = overlay_instruction(music, text="stop", measure_numbers = [2,4,6],offset=-20,measures_info=measures_info)
+music = overlay_instruction(music, text="get_ready_to_walk_forward", measure_numbers = [7], instruction_duration_in_measures=2,measures_info=measures_info)
+annotate_measure_info("walking_forward",9,24,measures_info=measures_info)
+music = overlay_instruction(music, text="get_ready_to_run_forward", measure_numbers = [25], instruction_duration_in_measures=2,measures_info=measures_info)
+annotate_measure_info("running_forward",27,42,measures_info=measures_info)
+music = overlay_instruction(music, text="get_ready_to_walk_forward", measure_numbers = [43], instruction_duration_in_measures=2,measures_info=measures_info)
+annotate_measure_info("walking_forward",45,60,measures_info=measures_info)
+music = overlay_instruction(music, text="get_ready_to_stand_still", measure_numbers = [61], instruction_duration_in_measures=2,measures_info=measures_info)
+annotate_measure_info("standing_still",63,78,measures_info=measures_info)
 
 music.export(mp3file_overlay, format="mp3")
 

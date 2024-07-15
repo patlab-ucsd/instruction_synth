@@ -2,13 +2,13 @@ from pydub import AudioSegment
 from utils import *
 import mido
 
-def overlay_countdown(music, measure_number=None, bpm=None, count_from=None, offset=0, midifile=None):
+def overlay_countdown(music, start_measure=None, bpm=None, count_from=None, offset=0, midifile=None):
     """
     add countdown starting from specified measure
     """
     mid = mido.MidiFile(midifile)
 
-    initial_overlay_position_ms = get_measure_starts(mid)[measure_number][1]*1000
+    initial_overlay_position_ms = get_measure_starts(mid)[start_measure][1]*1000
     interval = 60000/bpm
     for i in range(count_from, 0, -1):
         overlay_position_ms = initial_overlay_position_ms + interval*(count_from-i)+offset
