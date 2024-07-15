@@ -6,6 +6,21 @@ from pydub import AudioSegment
 from pydub.silence import detect_leading_silence
 from bisect import bisect_right
 from dataclasses import dataclass, asdict
+import yaml
+import traceback
+
+def load_yaml(filepath):
+    """
+    Load the yaml file. Returns an empty dictionary if the file cannot be read.
+    """
+    # yaml_path = os.path.join(pwd, filepath)
+    try:
+        with open(filepath, "r") as stream:
+            dictionary = yaml.safe_load(stream)
+            return dictionary
+    except:
+        traceback.print_exc()
+        return dict()
 
 def load_audio(filename):
     """
@@ -82,6 +97,7 @@ def get_measure_starts(mid):
     assumes varying tempo
 
     returns: a dict of measure start time (indexed by measure number, starting from 1), in ticks and seconds
+    TODO: this is ugly, should use more efficient method to enable efficient recalculation when the midi is changed. needs to build a class for analyzing the midix
     """
 
     time_signature_changes = [] #numerator, denominator, tick, seconds
