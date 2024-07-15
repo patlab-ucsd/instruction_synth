@@ -34,7 +34,7 @@ def generate_mp3_simple(midi_file, soundfont):
 
 def midi_adjust_tempo_inst(midi_file, bpm = 100, soundfont = None, inst = "nylon-guitar", save_midi = False):
     """
-    render midi given bpm
+    modify midi given bpm
     single instrument
     """
 
@@ -54,14 +54,14 @@ def midi_adjust_tempo_inst(midi_file, bpm = 100, soundfont = None, inst = "nylon
             print("tempo:",mido.bpm2tempo(bpm))
 
             # set instrument at the beginning
-            new_msg = mido.Message('program_change', program=inst, time=0)
-            new_track.append(new_msg)
+            new_track.append(mido.Message('program_change', program=inst, time=0))
+            # set tempo at the beginning
+            new_track.append(mido.MetaMessage('set_tempo', tempo=mido.bpm2tempo(bpm), time=0))
 
             for msg in track:
                 if "note" not in msg.type:
                     pass
                 if msg.type == 'set_tempo':
-                    #print("set_tempo",msg.time)
                     new_msg = mido.MetaMessage('set_tempo', tempo=mido.bpm2tempo(bpm), time=msg.time)
                     new_track.append(new_msg)
                 elif msg.type == 'program_change':
@@ -78,6 +78,31 @@ def midi_adjust_tempo_inst(midi_file, bpm = 100, soundfont = None, inst = "nylon
 
         return adjusted_midi_file
 
+def midi_add_padding_at_start(midi_file, num_measures = 6, numerator = 2, denominator = 4):
+    """
+    pad the beginning
+    """
+
+    with mido.MidiFile(midi_file) as mid:
+        ticks_per_measure = int (numerator * mid.ticks_per_beat * 4 / denominator)
+        total_ticks = num_measures * ticks_per_measure
+
+        # look for the beginning
+        padding_note = mido.Message("note_off", time = total_ticks)
+        for track in mid.tracks:
+            first_time_signature_index = 0
+            index = 0
+            # find the starting of the track
+            for msg in track:
+                if msg.type == 'time_signature':
+                    first_time_signature_index = index
+                    break
+                index+=1
+            print("padding insert position (index of midi msg):", first_time_signature_index+1)
+            track.insert(first_time_signature_index+1, padding_note)
+        adjusted_midi_file = f"{os.path.splitext(midi_file)[0]}_padded.mid"
+        mid.save(adjusted_midi_file)
+        return adjusted_midi_file
 
 def midi_add_simple_drum(midi_file, perc_inst = "woodblock"):
     """
@@ -161,11 +186,19 @@ def midi_to_mp3(adjusted_midi_file, mp3_file):
     audio = AudioSegment.from_wav(temp_wav.name)
     audio.export(mp3_file, format="mp3")
 
-def generate_mp3(midi_file, bpm = 100, soundfont = None, inst = "nylon-guitar", perc_inst="woodblock",save_midi = False):
+def generate_mp3(midi_file, bpm = 100, soundfont = None, inst = "nylon-guitar", perc_inst="woodblock",save_midi = False, num_measures_padded = 6, numerator_padded=4, denominator_padded=4):
+    """
+    1. padding at the beginning
+    2. change the tempo and instrument
+    3. add a drum track
+    4. render to mp3
+    """
     #adjusted_midi_file = midi_file
-    adjusted_midi_file =  midi_adjust_tempo_inst(midi_file, bpm = bpm, soundfont = soundfont, inst = inst, save_midi = save_midi)
+    adjusted_midi_file = midi_add_padding_at_start(midi_file, num_measures = num_measures_padded, numerator = numerator_padded, denominator = denominator_padded)
+    adjusted_midi_file =  midi_adjust_tempo_inst(adjusted_midi_file, bpm = bpm, soundfont = soundfont, inst = inst, save_midi = save_midi)
     adjusted_midi_file = midi_add_simple_drum(adjusted_midi_file, perc_inst = perc_inst)
     generate_mp3_simple(adjusted_midi_file,soundfont)
+
 
 # Define paths and filenames
 #midi_file = "./midi/Mary_had_a_Little_Lamb_-_variations_through_time.mid"
@@ -174,7 +207,7 @@ midi_file = "./midi/Mozart_12_Variations_on_Ah_vous_dirai-je_Maman_K.265.mid"
 midi_file = "./midi/My-Favorite-Things-(From-'The-Sound-Of-Music')-1.mid"
 midi_file = "./midi/MyFavoriteThings.mid"
 midi_file = "./midi/K265_cut.mid"
-midi_file = "./midi/Yankee_doodle_Saloon_style_padded.mid"
+midi_file = "./midi/Yankee_doodle_Saloon_style.mid"
 soundfont = "~/Music/FluidR3_GM/FluidR3_GM.sf2"
 
 # Convert MIDI to WAV

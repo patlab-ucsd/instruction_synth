@@ -51,9 +51,10 @@ def video_from_measures_info(measures_info, videofile = None, audiofile = None):
     texts.append((previous_text, text_starting_time, text_ending_time))
     print(texts)
 
-    text_size = (1000, 200)
+    text_size = (1200, 300)
     clips = []
     for text,text_starting_time, text_ending_time in texts:
+        text = " ".join(text.split("_"))
         # Define the duration for each slide
         duration = text_ending_time-text_starting_time  # seconds
         # Create a clip with the text "walking"
@@ -92,13 +93,13 @@ music = overlay_countdown(music, midifile=midifile,measure_number=62,bpm=bpm,cou
 # overlay instructions
 music = overlay_instruction(music, text="moving", measure_numbers = [1,3,5])
 music = overlay_instruction(music, text="stop", measure_numbers = [2,4,6],offset=-20)
-music = overlay_instruction(music, text="next_walking_forward", measure_numbers = [7], instruction_duration_in_measures=2)
+music = overlay_instruction(music, text="get_ready_to_walk_forward", measure_numbers = [7], instruction_duration_in_measures=2)
 annotate_measure_info("walking_forward",9,24)
-music = overlay_instruction(music, text="next_running_forward", measure_numbers = [25], instruction_duration_in_measures=2)
+music = overlay_instruction(music, text="get_ready_to_run_forward", measure_numbers = [25], instruction_duration_in_measures=2)
 annotate_measure_info("running_forward",27,42)
-music = overlay_instruction(music, text="next_walking_forward", measure_numbers = [43], instruction_duration_in_measures=2)
+music = overlay_instruction(music, text="get_ready_to_walk_forward", measure_numbers = [43], instruction_duration_in_measures=2)
 annotate_measure_info("walking_forward",45,60)
-music = overlay_instruction(music, text="next_standing_still", measure_numbers = [61], instruction_duration_in_measures=2)
+music = overlay_instruction(music, text="get_ready_to_stand_still", measure_numbers = [61], instruction_duration_in_measures=2)
 annotate_measure_info("standing_still",63,78)
 
 music.export(mp3file_overlay, format="mp3")

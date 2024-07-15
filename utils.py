@@ -132,6 +132,7 @@ if __name__ == "__main__":
     mid = mido.MidiFile("./midi/test.mid")
     print(get_measure_starts(mid))
 
+    # speed up
     speed_up_factor=1.5
     for i in range(1,5):
         speedup_audio_file(f"./tts/{i}.mp3",speed_up_factor)
@@ -140,11 +141,7 @@ if __name__ == "__main__":
         audio.export(f"./tts/{i}_trimmed.mp3", format="mp3")
     """
 
-    tts_word = "moving"
-    audio = AudioSegment.from_mp3(f"./tts/{tts_word}.mp3")
-    audio = trim_silence(audio)
-    audio.export(f"./tts/{tts_word}.mp3", format="mp3")
-
+    # trim
     tts_word = "stop"
     audio = AudioSegment.from_mp3(f"./tts/{tts_word}.mp3")
     audio = trim_silence(audio)
