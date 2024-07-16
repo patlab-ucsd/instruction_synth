@@ -11,6 +11,7 @@ def examine_midi_msg(midi_file):
     with mido.MidiFile(midi_file) as mid:
         for track in mid.tracks:
             for msg in track:
+                #print(msg)
                 if "note" not in msg.type:
                     print(msg)
 
@@ -32,57 +33,76 @@ def generate_mp3_simple(midi_file, soundfont):
         os.remove(wav_filename)
         print(f"Deleted intermediate WAV file: {wav_filename}")
 
-def midi_adjust_tempo_inst(midi_file, bpm = 100, soundfont = None, inst = "nylon-guitar", save_midi = False):
+
+def midi_adjust_tempo(midi_file, bpm = 100):
+    with mido.MidiFile(midi_file) as mid:
+        #Tempo is in microseconds per beat (quarter note) default: 500000  (60 bpm)
+        new_mid = mido.MidiFile()
+        for track_index, track in enumerate(mid.tracks):
+            new_track = mido.MidiTrack()
+            # add the new track to the new midi file
+            new_mid.tracks.append(new_track)
+
+            new_mid.ticks_per_beat=mid.ticks_per_beat
+            print("tempo:",mido.bpm2tempo(bpm))
+            # set tempo at the beginning
+            new_track.append(mido.MetaMessage('set_tempo', tempo=mido.bpm2tempo(bpm), time=0))
+
+            for msg in track:
+                if msg.type == 'set_tempo':
+                    new_msg = mido.MetaMessage('set_tempo', tempo=mido.bpm2tempo(bpm), time=msg.time)
+                    new_track.append(new_msg)
+                else:
+                    new_track.append(msg)
+
+        adjusted_midi_file = f"{os.path.splitext(midi_file)[0]}_{bpm}.mid"
+        new_mid.save(adjusted_midi_file)
+        return adjusted_midi_file
+
+def midi_adjust_inst(midi_file, soundfont = None, inst = "nylon-guitar"):
     """
     modify midi given bpm
-    single instrument
+    assumes single instrument
     """
 
     inst = insts[inst]
 
-    # Adjust tempo in memory and render MIDI to WAV
     with mido.MidiFile(midi_file) as mid:
         print("number of tracks:",len(mid.tracks))
         #Tempo is in microseconds per beat (quarter note) default: 500000  (60 bpm)
 
         new_mid = mido.MidiFile()
-        for track in mid.tracks:
+        for track_index, track in enumerate(mid.tracks):
             new_track = mido.MidiTrack()
+            # add the new track to the new midi file
             new_mid.tracks.append(new_track)
-
+            notes_channel = 0
             new_mid.ticks_per_beat=mid.ticks_per_beat
-            print("tempo:",mido.bpm2tempo(bpm))
-
-            # set instrument at the beginning
-            new_track.append(mido.Message('program_change', program=inst, time=0))
-            # set tempo at the beginning
-            new_track.append(mido.MetaMessage('set_tempo', tempo=mido.bpm2tempo(bpm), time=0))
 
             for msg in track:
-                if "note" not in msg.type:
-                    pass
-                if msg.type == 'set_tempo':
-                    new_msg = mido.MetaMessage('set_tempo', tempo=mido.bpm2tempo(bpm), time=msg.time)
-                    new_track.append(new_msg)
+                if msg.type == "note_on":
+                    notes_channel = msg.channel
+                if msg.type == "instrument_name":
+                    continue
+                if msg.type == "channel_prefix":
+                    continue
                 elif msg.type == 'program_change':
+                    print(track_index, "program_change")
                     new_msg = mido.Message('program_change', program=inst, channel=msg.channel, time=msg.time)
                     new_track.append(new_msg)
                 else:
                     new_track.append(msg)
+            # handle default situation
+            new_track.insert(0,mido.Message('program_change', program=inst, time=0, channel = notes_channel))
 
-        if not save_midi:
-            adjusted_midi_file = tempfile.NamedTemporaryFile(suffix='.mid', delete=True).name
-        else:
-            adjusted_midi_file = f"{os.path.splitext(midi_file)[0]}_{bpm}.mid"
+        adjusted_midi_file = midi_file
         new_mid.save(adjusted_midi_file)
-
         return adjusted_midi_file
 
 def midi_add_padding_at_start(midi_file, num_measures = 6, numerator = 2, denominator = 4):
     """
     pad the beginning
     """
-
     with mido.MidiFile(midi_file) as mid:
         ticks_per_measure = int (numerator * mid.ticks_per_beat * 4 / denominator)
         total_ticks = num_measures * ticks_per_measure
@@ -186,7 +206,7 @@ def midi_to_mp3(adjusted_midi_file, mp3_file):
     audio = AudioSegment.from_wav(temp_wav.name)
     audio.export(mp3_file, format="mp3")
 
-def generate_mp3(midi_file, bpm = 100, soundfont = None, inst = "nylon-guitar", perc_inst="woodblock",save_midi = False, num_measures_padded = 6, numerator_padded=4, denominator_padded=4):
+def generate_mp3(midi_file, bpm = 100, soundfont = None, inst = "nylon-guitar", perc_inst="woodblock", num_measures_padded = 6, numerator_padded=4, denominator_padded=4, change_inst=True, add_drum=True, change_tempo=True):
     """
     1. padding at the beginning
     2. change the tempo and instrument
@@ -195,9 +215,14 @@ def generate_mp3(midi_file, bpm = 100, soundfont = None, inst = "nylon-guitar", 
     """
     #adjusted_midi_file = midi_file
     adjusted_midi_file = midi_add_padding_at_start(midi_file, num_measures = num_measures_padded, numerator = numerator_padded, denominator = denominator_padded)
-    adjusted_midi_file =  midi_adjust_tempo_inst(adjusted_midi_file, bpm = bpm, soundfont = soundfont, inst = inst, save_midi = save_midi)
-    adjusted_midi_file = midi_add_simple_drum(adjusted_midi_file, perc_inst = perc_inst)
+    if change_tempo:
+        adjusted_midi_file = midi_adjust_tempo(adjusted_midi_file, bpm=bpm)
+    if change_inst:
+        adjusted_midi_file =  midi_adjust_inst(adjusted_midi_file, soundfont = soundfont, inst = inst)
+    if add_drum:
+        adjusted_midi_file = midi_add_simple_drum(adjusted_midi_file, perc_inst = perc_inst)
     generate_mp3_simple(adjusted_midi_file,soundfont)
+    examine_midi_msg(adjusted_midi_file)
 
 
 # Define paths and filenames
@@ -208,6 +233,7 @@ midi_file = "./midi/My-Favorite-Things-(From-'The-Sound-Of-Music')-1.mid"
 midi_file = "./midi/MyFavoriteThings.mid"
 midi_file = "./midi/K265_cut.mid"
 midi_file = "./midi/Yankee_doodle_Saloon_style.mid"
+midi_file = "./midi/doremi.mid"
 soundfont = "~/Music/FluidR3_GM/FluidR3_GM.sf2"
 
 # Convert MIDI to WAV
@@ -227,5 +253,4 @@ insts = {"e-piano1":4,
          "woodblock":115,
          "taiko":116,
          "synthdrum":118}
-generate_mp3(midi_file, bpm = 100, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", save_midi = True)
-#examine_midi_msg("./midi/Yankee_doodle_Saloon_style_100_added.mid")
+generate_mp3(midi_file, bpm = 120, soundfont = soundfont, inst="nylon-guitar", perc_inst="woodblock")
