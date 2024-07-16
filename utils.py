@@ -158,7 +158,7 @@ if __name__ == "__main__":
     """
 
     # trim
-    tts_word = "stop"
+    tts_word = "turn_back"
     audio = AudioSegment.from_mp3(f"./tts/{tts_word}.mp3")
     audio = trim_silence(audio)
     audio.export(f"./tts/{tts_word}.mp3", format="mp3")

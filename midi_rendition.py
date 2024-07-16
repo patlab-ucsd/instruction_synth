@@ -224,22 +224,6 @@ def generate_mp3(midi_file, bpm = 100, soundfont = None, inst = "nylon-guitar", 
     generate_mp3_simple(adjusted_midi_file,soundfont)
     examine_midi_msg(adjusted_midi_file)
 
-
-# Define paths and filenames
-#midi_file = "./midi/Mary_had_a_Little_Lamb_-_variations_through_time.mid"
-#midi_file = "./midi/London_Bridge_Is_Falling_Down.mid"
-midi_file = "./midi/Mozart_12_Variations_on_Ah_vous_dirai-je_Maman_K.265.mid"
-midi_file = "./midi/My-Favorite-Things-(From-'The-Sound-Of-Music')-1.mid"
-midi_file = "./midi/MyFavoriteThings.mid"
-midi_file = "./midi/K265_cut.mid"
-midi_file = "./midi/Yankee_doodle_Saloon_style.mid"
-midi_file = "./midi/doremi.mid"
-soundfont = "~/Music/FluidR3_GM/FluidR3_GM.sf2"
-
-# Convert MIDI to WAV
-#wav_file = midi_to_mp3(midi_file, mp3_file, soundfont)
-
-# https://en.wikipedia.org/wiki/General_MIDI
 insts = {"e-piano1":4,
          "e-piano2":5,
          "harpsichord":6,
@@ -253,4 +237,3 @@ insts = {"e-piano1":4,
          "woodblock":115,
          "taiko":116,
          "synthdrum":118}
-generate_mp3(midi_file, bpm = 120, soundfont = soundfont, inst="nylon-guitar", perc_inst="woodblock")

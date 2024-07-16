@@ -1,0 +1,33 @@
+countdowns:
+  - start_measure: 43
+    count_from: 4
+    offset_in_ms: -20
+  - start_measure: 75
+    count_from: 4
+    offset_in_ms: -20
+instructions:
+  - text: "moving"
+    measure_numbers: [1, 5, 9]
+    instruction_duration_in_measures: 2
+    voiced: true
+  - text: "stop"
+    measure_numbers: [3, 7, 11, 41, 73]
+    instruction_duration_in_measures: 2
+    voiced: true
+  - text: "stop"
+    measure_numbers: [105]
+    instruction_duration_in_measures: 4
+    voiced: true
+  - text: "repeat"
+    measure_numbers: [43, 75]
+    instruction_duration_in_measures: 2
+    voiced: false
+  - text: "walk"
+    measure_numbers: [13, 17, 21, 25, 29, 33, 37, 45, 49, 53, 57, 61, 65, 69, 77, 81, 85, 89, 93, 97, 101]
+    instruction_duration_in_measures: 3
+    voiced: true
+  - text: "turn back"
+    measure_numbers: [16, 20, 24, 28, 32, 36, 40, 48, 52, 56, 60, 64, 68, 72, 80, 84, 88, 92, 96, 100, 104]
+    instruction_duration_in_measures: 1
+    rhythmic: true
+    voiced: true

@@ -12,7 +12,7 @@ def overlay_countdown(music, start_measure=None, bpm=None, count_from=None, offs
     interval = 60000/bpm
     for i in range(count_from, 0, -1):
         overlay_position_ms = initial_overlay_position_ms + interval*(count_from-i)+offset_in_ms
-        print("overlay at:",overlay_position_ms/1000)
+        print(f"overlay {i} at:",overlay_position_ms/1000)
         voice = AudioSegment.from_mp3(f"./tts/{i}_trimmed.mp3")
         music = music.overlay(voice, position=overlay_position_ms)
     return music

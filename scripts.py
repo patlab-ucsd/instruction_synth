@@ -3,6 +3,8 @@ from utils import *
 import mido
 from overlay import *
 from moviepy.editor import *
+from tts import *
+from midi_rendition import *
 
 def annotate_measure_info(text, starting_measure, ending_measure, measures_info = dict()):
     """
@@ -15,11 +17,20 @@ def annotate_measure_info(text, starting_measure, ending_measure, measures_info 
             ending_time = total_audio_duration
         measures_info[measure] = {"text":text,"starting_time":measure_starts[measure][1],"ending_time":ending_time}
 
-def overlay_instruction(music, text=None, measure_numbers=[],offset_in_ms=0, instruction_duration_in_measures = 1, measures_info = dict()):
+def overlay_instruction(music, text=None, measure_numbers=[],offset_in_ms=0, instruction_duration_in_measures = 1, measures_info = dict(), rhythmic=False, bpm=None):
     """
     overlay tts instruction at selected measures
     """
-    voice = AudioSegment.from_mp3(f"./tts/{text}.mp3")
+    if rhythmic:
+        tts_filename = f"./tts/{text}_rhythmic_{bpm}.mp3"
+        if not os.path.exists(tts_filename):
+            synth_rhythmic_speech(" ".join(text.split("_")), bpm = bpm)
+    else:
+        tts_filename = f"./tts/{text}.mp3"
+        if not os.path.exists(tts_filename):
+            synth_sentence(" ".join(text.split("_")))
+
+    voice = AudioSegment.from_mp3(tts_filename)
     music = overlay_at_measure(music,voice,measure_numbers=measure_numbers, midifile = midifile, offset_in_ms=offset_in_ms)
     # record the time info
     for starting_measure in measure_numbers:
@@ -79,12 +90,30 @@ def overlay_from_yaml(yaml_path=None, music=None, midifile=None, bpm=None,measur
         text = "_".join(info["text"].split())
         if info["voiced"]:
             instruction_duration_in_measures = info.get("instruction_duration_in_measures",1)
-            music = overlay_instruction(music, text=text, measure_numbers = info["measure_numbers"], instruction_duration_in_measures = instruction_duration_in_measures, measures_info=measures_info)
+            rhythmic = info.get("rhythmic",False)
+            music = overlay_instruction(music, text=text, measure_numbers = info["measure_numbers"], instruction_duration_in_measures = instruction_duration_in_measures, measures_info=measures_info, rhythmic=rhythmic, bpm=bpm)
         else:
             for start_measure in info["measure_numbers"]:
                 annotate_measure_info(text,start_measure,start_measure+info["instruction_duration_in_measures"]-1,measures_info=measures_info)
     return music
 
+
+# Define paths and filenames
+#midi_file = "./midi/Mary_had_a_Little_Lamb_-_variations_through_time.mid"
+#midi_file = "./midi/London_Bridge_Is_Falling_Down.mid"
+midi_file = "./midi/Mozart_12_Variations_on_Ah_vous_dirai-je_Maman_K.265.mid"
+midi_file = "./midi/My-Favorite-Things-(From-'The-Sound-Of-Music')-1.mid"
+midi_file = "./midi/MyFavoriteThings.mid"
+midi_file = "./midi/K265_cut.mid"
+midi_file = "./midi/Yankee_doodle_Saloon_style.mid"
+midi_file = "./midi/doremi.mid"
+soundfont = "~/Music/FluidR3_GM/FluidR3_GM.sf2"
+
+# Convert MIDI to WAV
+#wav_file = midi_to_mp3(midi_file, mp3_file, soundfont)
+
+# https://en.wikipedia.org/wiki/General_MIDI
+"""
 # Scripts for overlay and nnnotate yankee
 bpm = 100
 mp3file = f"./music/Yankee_doodle_Saloon_style_padded_{bpm}_drum_added.mp3"
@@ -97,6 +126,7 @@ measure_starts = get_measure_starts(mid) # a dict, in ticks and seconds
 total_measures_count = max(measure_starts.keys())
 print("total number of measures",total_measures_count,"total duration",total_audio_duration)
 measures_info = dict() #global
+"""
 
 """
 # overlay countdown
@@ -118,10 +148,32 @@ annotate_measure_info("walking_forward",45,60,measures_info=measures_info)
 music = overlay_instruction(music, text="get_ready_to_stand_still", measure_numbers = [61], instruction_duration_in_measures=2,measures_info=measures_info)
 annotate_measure_info("standing_still",63,78,measures_info=measures_info)
 """
-
-music = overlay_from_yaml(yaml_path="./yaml/Yankee_doodle_Saloon_style_padded.yaml", music=music, midifile=midifile, bpm=bpm, measures_info=measures_info)
+"""
+music = overlay_from_yaml(yaml_path="./yaml/Yankee_doodle_Saloon_style_padded_test.yaml", music=music, midifile=midifile, bpm=bpm, measures_info=measures_info)
 
 music.export(mp3file_overlay, format="mp3")
 
 {print(f"{key}: {value}") for key, value in measures_info.items()}
 video_from_measures_info(measures_info, videofile= "walking_running.mp4", audiofile = mp3file_overlay)
+"""
+
+bpm = 110
+generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock")
+original_name = "doremi"
+mp3file = f"./music/{original_name}_padded_{bpm}_drum_added.mp3"
+midifile = f"./midi/{original_name}_padded_{bpm}_drum_added.mid"
+mp3file_overlay = f"./music/{original_name}_padded_{bpm}_drum_added_overlay.mp3"
+total_audio_duration = get_duration(mp3file)#alternatively: mid.length the two might be different, due to reverb
+mid = mido.MidiFile(midifile)
+music = AudioSegment.from_mp3(mp3file)
+measure_starts = get_measure_starts(mid) # a dict, in ticks and seconds
+total_measures_count = max(measure_starts.keys())
+print("total number of measures",total_measures_count,"total duration",total_audio_duration)
+measures_info = dict() #global
+
+music = overlay_from_yaml(yaml_path=f"./yaml/{original_name}_padded.yaml", music=music, midifile=midifile, bpm=bpm, measures_info=measures_info)
+
+music.export(mp3file_overlay, format="mp3")
+
+{print(f"{key}: {value}") for key, value in measures_info.items()}
+video_from_measures_info(measures_info, videofile= "doremi.mp4", audiofile = mp3file_overlay)
