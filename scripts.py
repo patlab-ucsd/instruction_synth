@@ -69,7 +69,7 @@ def video_from_measures_info(measures_info, videofile = None, audiofile = None):
         # Define the duration for each slide
         duration = text_ending_time-text_starting_time  # seconds
         # Create a clip with the text "walking"
-        clip = TextClip(text, fontsize=70, color='white', size=text_size).set_duration(duration).set_pos('center').on_color(color=(0, 0, 0), col_opacity=1)
+        clip = TextClip(text, fontsize=70, color='white', size=text_size, method='caption').set_duration(duration).set_pos('center').on_color(color=(0, 0, 0), col_opacity=1)
         clips.append(clip)
 
     # Concatenate the two clips
@@ -84,7 +84,7 @@ def video_from_measures_info(measures_info, videofile = None, audiofile = None):
 def overlay_from_yaml(yaml_path=None, music=None, midifile=None, bpm=None,measures_info=None):
     stuff = load_yaml(yaml_path)
     for ctd in stuff["countdowns"]:
-        music = overlay_countdown(music, midifile=midifile,start_measure=ctd["start_measure"],bpm=bpm,count_from=ctd["count_from"],offset_in_ms=ctd["offset_in_ms"])
+        music = overlay_countdown(music, midifile=midifile,start_measure=ctd["start_measure"],bpm=bpm/ctd.get("every_x_beat",1) ,count_from=ctd["count_from"],offset_in_ms=ctd["offset_in_ms"])
     instructions = stuff["instructions"]
     for info in instructions:
         text = "_".join(info["text"].split())
@@ -107,59 +107,32 @@ midi_file = "./midi/MyFavoriteThings.mid"
 midi_file = "./midi/K265_cut.mid"
 midi_file = "./midi/Yankee_doodle_Saloon_style.mid"
 midi_file = "./midi/doremi.mid"
+midi_file = "./midi/fav.mid"
 soundfont = "~/Music/FluidR3_GM/FluidR3_GM.sf2"
 
 # Convert MIDI to WAV
 #wav_file = midi_to_mp3(midi_file, mp3_file, soundfont)
 
 # https://en.wikipedia.org/wiki/General_MIDI
-"""
-# Scripts for overlay and nnnotate yankee
-bpm = 100
-mp3file = f"./music/Yankee_doodle_Saloon_style_padded_{bpm}_drum_added.mp3"
-midifile = f"./midi/Yankee_doodle_Saloon_style_padded_{bpm}_drum_added.mid"
-mp3file_overlay = f"./music/Yankee_doodle_Saloon_style_padded_{bpm}_drum_added_overlay.mp3"
-total_audio_duration = get_duration(mp3file)#alternatively: mid.length the two might be different, due to reverb
-mid = mido.MidiFile(midifile)
-music = AudioSegment.from_mp3(mp3file)
-measure_starts = get_measure_starts(mid) # a dict, in ticks and seconds
-total_measures_count = max(measure_starts.keys())
-print("total number of measures",total_measures_count,"total duration",total_audio_duration)
-measures_info = dict() #global
-"""
 
-"""
-# overlay countdown
-music = overlay_countdown(music, midifile=midifile,start_measure=8,bpm=bpm,count_from=4,offset_in_ms=-20)
-music = overlay_countdown(music, midifile=midifile,start_measure=26,bpm=bpm,count_from=4,offset_in_ms=-20)
-music = overlay_countdown(music, midifile=midifile,start_measure=44,bpm=bpm,count_from=4,offset_in_ms=-20)
-music = overlay_countdown(music, midifile=midifile,start_measure=62,bpm=bpm,count_from=4,offset_in_ms=-20)
+bpm = 150
 
-# overlay instructions
-# note: if parsing a file, needs to add _ 
-music = overlay_instruction(music, text="moving", measure_numbers = [1,3,5],measures_info=measures_info)
-music = overlay_instruction(music, text="stop", measure_numbers = [2,4,6],offset_in_ms=-20,measures_info=measures_info)
-music = overlay_instruction(music, text="get_ready_to_walk_forward", measure_numbers = [7], instruction_duration_in_measures=2,measures_info=measures_info)
-annotate_measure_info("walking_forward",9,24,measures_info=measures_info)
-music = overlay_instruction(music, text="get_ready_to_run_forward", measure_numbers = [25], instruction_duration_in_measures=2,measures_info=measures_info)
-annotate_measure_info("running_forward",27,42,measures_info=measures_info)
-music = overlay_instruction(music, text="get_ready_to_walk_forward", measure_numbers = [43], instruction_duration_in_measures=2,measures_info=measures_info)
-annotate_measure_info("walking_forward",45,60,measures_info=measures_info)
-music = overlay_instruction(music, text="get_ready_to_stand_still", measure_numbers = [61], instruction_duration_in_measures=2,measures_info=measures_info)
-annotate_measure_info("standing_still",63,78,measures_info=measures_info)
-"""
-"""
-music = overlay_from_yaml(yaml_path="./yaml/Yankee_doodle_Saloon_style_padded_test.yaml", music=music, midifile=midifile, bpm=bpm, measures_info=measures_info)
 
-music.export(mp3file_overlay, format="mp3")
+#original_name = "Yankee_doodle_Saloon_style"
+#midi_file =f"./midi/{original_name}.mid"
+#generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", change_inst=True, add_drum=True, change_tempo=True)
 
-{print(f"{key}: {value}") for key, value in measures_info.items()}
-video_from_measures_info(measures_info, videofile= "walking_running.mp4", audiofile = mp3file_overlay)
-"""
 
-bpm = 110
-generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock")
-original_name = "doremi"
+
+#original_name = "doremi"
+#midi_file =f"./midi/{original_name}.mid"
+#generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", change_inst=True, add_drum=True, change_tempo=True)
+
+
+
+original_name = "fav"
+midi_file =f"./midi/{original_name}.mid"
+generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="accordion", perc_inst="woodblock", num_measures_padded = 3, numerator_padded=3, denominator_padded=4, change_inst=True, add_drum=True, change_tempo=True)
 mp3file = f"./music/{original_name}_padded_{bpm}_drum_added.mp3"
 midifile = f"./midi/{original_name}_padded_{bpm}_drum_added.mid"
 mp3file_overlay = f"./music/{original_name}_padded_{bpm}_drum_added_overlay.mp3"
@@ -176,4 +149,4 @@ music = overlay_from_yaml(yaml_path=f"./yaml/{original_name}_padded.yaml", music
 music.export(mp3file_overlay, format="mp3")
 
 {print(f"{key}: {value}") for key, value in measures_info.items()}
-video_from_measures_info(measures_info, videofile= "doremi.mp4", audiofile = mp3file_overlay)
+video_from_measures_info(measures_info, videofile= f"{original_name}.mp4", audiofile = mp3file_overlay)

@@ -159,7 +159,7 @@ def midi_add_simple_drum(midi_file, perc_inst = "woodblock"):
                 time_changes.append((msg.numerator,msg.denominator,current_tick))
         # mark the ending
         time_changes.append((last_numerator, last_denominator,current_tick))
-
+        print("TIME cHANGES", time_changes)
         # add the percussion
         for i in range(len(time_changes)-1):
             numerator, denominator, current_tick = time_changes[i]
