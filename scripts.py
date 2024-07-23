@@ -21,17 +21,18 @@ def overlay_instruction(music, text=None, measure_numbers=[],offset_in_ms=0, ins
     """
     overlay tts instruction at selected measures
     """
-    if rhythmic:
-        tts_filename = f"./tts/{text}_rhythmic_{bpm}.mp3"
-        if not os.path.exists(tts_filename):
-            synth_rhythmic_speech(" ".join(text.split("_")), bpm = bpm)
-    else:
-        tts_filename = f"./tts/{text}.mp3"
-        if not os.path.exists(tts_filename):
-            synth_sentence(" ".join(text.split("_")))
-
-    voice = AudioSegment.from_mp3(tts_filename)
-    music = overlay_at_measure(music,voice,measure_numbers=measure_numbers, midifile = midifile, offset_in_ms=offset_in_ms)
+    for measure_number in measure_numbers:
+        if rhythmic:
+            bpm = int(round(60*1000000.0/measure_starts[measure_number][2]))
+            tts_filename = f"./tts/{text}_rhythmic_{bpm}.mp3"
+            if not os.path.exists(tts_filename):
+                synth_rhythmic_speech(" ".join(text.split("_")), bpm = bpm)
+        else:
+            tts_filename = f"./tts/{text}.mp3"
+            if not os.path.exists(tts_filename):
+                synth_sentence(" ".join(text.split("_")))
+        voice = AudioSegment.from_mp3(tts_filename)
+        music = overlay_at_measure(music,voice,measure_number=measure_number, midifile = midifile, offset_in_ms=offset_in_ms)
     # record the time info
     for starting_measure in measure_numbers:
         annotate_measure_info(text, starting_measure, starting_measure+instruction_duration_in_measures-1, measures_info=measures_info)
@@ -81,9 +82,11 @@ def video_from_measures_info(measures_info, videofile = None, audiofile = None):
     # Write the result to a file
     final_clip.write_videofile(videofile, fps=24, codec="h264")
 
-def overlay_from_yaml(yaml_path=None, music=None, midifile=None, bpm=None,measures_info=None):
+def overlay_from_yaml(yaml_path=None, music=None, midifile=None, measures_info=None):
     stuff = load_yaml(yaml_path)
     for ctd in stuff["countdowns"]:
+        # get the tempo at the measure
+        bpm = int(round(60*1000000.0/measure_starts[ctd["start_measure"]][2]))
         music = overlay_countdown(music, midifile=midifile,start_measure=ctd["start_measure"],bpm=bpm/ctd.get("every_x_beat",1) ,count_from=ctd["count_from"],offset_in_ms=ctd["offset_in_ms"])
     instructions = stuff["instructions"]
     for info in instructions:
@@ -115,38 +118,58 @@ soundfont = "~/Music/FluidR3_GM/FluidR3_GM.sf2"
 
 # https://en.wikipedia.org/wiki/General_MIDI
 
-bpm = 150
+# when bpm is None, no tempo change is performed
+bpm = 120
 
 
 #original_name = "Yankee_doodle_Saloon_style"
 #midi_file =f"./midi/{original_name}.mid"
 #generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", change_inst=True, add_drum=True, change_tempo=True)
-
+#yaml_path = f"./yaml/{original_name}_padded.yaml"
 
 
 #original_name = "doremi"
 #midi_file =f"./midi/{original_name}.mid"
 #generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", change_inst=True, add_drum=True, change_tempo=True)
+#yaml_path = f"./yaml/{original_name}_padded.yaml"
 
+#original_name = "doremi"
+#midi_file =f"./midi/{original_name}.mid"
+#yaml_name =f"{original_name}_padded_simple"
+#generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", num_measures_padded = 8, change_inst=True, add_drum=True, change_tempo=True)
 
-
-original_name = "fav"
+bpm = None
+original_name = "doremi_acc"
 midi_file =f"./midi/{original_name}.mid"
-generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="accordion", perc_inst="woodblock", num_measures_padded = 3, numerator_padded=3, denominator_padded=4, change_inst=True, add_drum=True, change_tempo=True)
-mp3file = f"./music/{original_name}_padded_{bpm}_drum_added.mp3"
-midifile = f"./midi/{original_name}_padded_{bpm}_drum_added.mid"
-mp3file_overlay = f"./music/{original_name}_padded_{bpm}_drum_added_overlay.mp3"
+yaml_name =f"doremi_padded_simple"
+generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", num_measures_padded = 0, change_inst=True, add_drum=True, change_tempo=False)
+
+
+#original_name = "fav"
+#midi_file =f"./midi/{original_name}.mid"
+#generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="accordion", perc_inst="woodblock", num_measures_padded = 3, numerator_padded=3, denominator_padded=4, change_inst=True, add_drum=True, change_tempo=True)
+if bpm:
+    mp3file = f"./music/{original_name}_padded_{bpm}_drum_added.mp3"
+    midifile = f"./midi/{original_name}_padded_{bpm}_drum_added.mid"
+    mp3file_overlay = f"./music/{original_name}_padded_{bpm}_drum_added_overlay.mp3"
+    mp4file = f"{yaml_name}_{bpm}.mp4"
+else:
+    mp3file = f"./music/{original_name}_padded_drum_added.mp3"
+    midifile = f"./midi/{original_name}_padded_drum_added.mid"
+    mp3file_overlay = f"./music/{original_name}_padded_drum_added_overlay.mp3"
+    mp4file = f"{yaml_name}.mp4"
+
 total_audio_duration = get_duration(mp3file)#alternatively: mid.length the two might be different, due to reverb
 mid = mido.MidiFile(midifile)
 music = AudioSegment.from_mp3(mp3file)
-measure_starts = get_measure_starts(mid) # a dict, in ticks and seconds
+measure_starts = get_measure_starts(mid) # a dict, in ticks and seconds and tempo (microseconds)
 total_measures_count = max(measure_starts.keys())
 print("total number of measures",total_measures_count,"total duration",total_audio_duration)
 measures_info = dict() #global
 
-music = overlay_from_yaml(yaml_path=f"./yaml/{original_name}_padded.yaml", music=music, midifile=midifile, bpm=bpm, measures_info=measures_info)
+music = overlay_from_yaml(yaml_path=f"./yaml/{yaml_name}.yaml", music=music, midifile=midifile, measures_info=measures_info)
 
 music.export(mp3file_overlay, format="mp3")
 
 {print(f"{key}: {value}") for key, value in measures_info.items()}
-video_from_measures_info(measures_info, videofile= f"{original_name}.mp4", audiofile = mp3file_overlay)
+video_from_measures_info(measures_info, videofile=mp4file, audiofile = mp3file_overlay)
