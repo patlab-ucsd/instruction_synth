@@ -17,9 +17,8 @@ def overlay_countdown(music, start_measure=None, bpm=None, count_from=None, offs
         music = music.overlay(voice, position=overlay_position_ms)
     return music
 
-def overlay_at_measure(music, voice, measure_numbers=None,midifile=None,offset_in_ms=0):
+def overlay_at_measure(music, voice, measure_number=None,midifile=None,offset_in_ms=0):
     mid = mido.MidiFile(midifile)
-    for measure_number in measure_numbers:
-        overlay_position_ms = get_measure_starts(mid)[measure_number][1]*1000+offset_in_ms
-        music = music.overlay(voice, position=overlay_position_ms)
+    overlay_position_ms = get_measure_starts(mid)[measure_number][1]*1000+offset_in_ms
+    music = music.overlay(voice, position=overlay_position_ms)
     return music
