@@ -43,6 +43,7 @@ def get_duration(filename):
     """
     returns the duration of the audio in seconds
     """
+    print(f"Getting duration for {filename}")
     duration_seconds = float(ffmpeg.probe(filename)['format']['duration'])
     return duration_seconds
 
@@ -88,7 +89,8 @@ def current_tick_to_seconds(current_tick, tempo_changes, ticks_per_beat=480):
             return i-1, a[i-1]
         raise ValueError
     index, tick = find_le(t, current_tick)
-    return tempo_changes[index][2]+ticks_to_seconds(current_tick - tick, ticks_per_beat, tempo_changes[index][1])
+    # seconds, microseconds_per_beat
+    return tempo_changes[index][2]+ticks_to_seconds(current_tick - tick, ticks_per_beat, tempo_changes[index][1]), tempo_changes[index][1]
 
 
 def get_measure_starts(mid):
@@ -138,8 +140,8 @@ def get_measure_starts(mid):
         # for each measure
         for measure_start_tick in range(current_tick, next_tick, ticks_per_measure):
             measure_count+=1
-            measure_start_seconds = current_tick_to_seconds(measure_start_tick, tempo_changes, ticks_per_beat = mid.ticks_per_beat)
-            measure_starts_dict[measure_count] = (measure_start_tick,measure_start_seconds)
+            measure_start_seconds, measure_start_microseconds_per_beat = current_tick_to_seconds(measure_start_tick, tempo_changes, ticks_per_beat = mid.ticks_per_beat)
+            measure_starts_dict[measure_count] = (measure_start_tick,measure_start_seconds, measure_start_microseconds_per_beat)
     return measure_starts_dict
 
 if __name__ == "__main__":
@@ -158,7 +160,7 @@ if __name__ == "__main__":
     """
 
     # trim
-    tts_word = "turn_back"
-    audio = AudioSegment.from_mp3(f"./tts/{tts_word}.mp3")
-    audio = trim_silence(audio)
-    audio.export(f"./tts/{tts_word}.mp3", format="mp3")
+    #tts_word = "turn_back"
+    #audio = AudioSegment.from_mp3(f"./tts/{tts_word}.mp3")
+    #audio = trim_silence(audio)
+    #audio.export(f"./tts/{tts_word}.mp3", format="mp3")
