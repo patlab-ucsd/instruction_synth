@@ -69,15 +69,16 @@ def speedup_audio_file(filename, speedup_factor):
 
 def ticks_to_seconds(ticks, ticks_per_beat, microseconds_per_beat):
     """
-    given the number of ticks, calculate the duration in seconds
+    given the number of ticks and tempo, calculate the duration in seconds
     """
     # Calculate seconds from ticks based on tempo
     return ticks / ticks_per_beat * microseconds_per_beat / 1000000
 
 
-def current_tick_to_seconds(current_tick, tempo_changes, ticks_per_beat=480):
+def current_tick_temporal_info(current_tick, tempo_changes, ticks_per_beat=480):
     """
-    given the current tick, and a list of tempo changes, calculate the current time in seconds
+    given the current tick, and a list of tempo changes
+    return the current time in seconds, and the tempo at current tick
     """
     #tempo_changes: tick, microseconds_per_beat, current_time_in_seconds
     t = [x[0] for x in tempo_changes]
@@ -90,7 +91,9 @@ def current_tick_to_seconds(current_tick, tempo_changes, ticks_per_beat=480):
         raise ValueError
     index, tick = find_le(t, current_tick)
     # seconds, microseconds_per_beat
-    return tempo_changes[index][2]+ticks_to_seconds(current_tick - tick, ticks_per_beat, tempo_changes[index][1]), tempo_changes[index][1]
+    current_microseconds_per_beat = tempo_changes[index][1]
+    last_tempo_change_time_in_seconds = tempo_changes[index][2]
+    return last_tempo_change_time_in_seconds+ticks_to_seconds(current_tick - tick, ticks_per_beat, current_microseconds_per_beat), current_microseconds_per_beat
 
 
 def get_measure_starts(mid):
@@ -140,7 +143,7 @@ def get_measure_starts(mid):
         # for each measure
         for measure_start_tick in range(current_tick, next_tick, ticks_per_measure):
             measure_count+=1
-            measure_start_seconds, measure_start_microseconds_per_beat = current_tick_to_seconds(measure_start_tick, tempo_changes, ticks_per_beat = mid.ticks_per_beat)
+            measure_start_seconds, measure_start_microseconds_per_beat = current_tick_temporal_info(measure_start_tick, tempo_changes, ticks_per_beat = mid.ticks_per_beat)
             measure_starts_dict[measure_count] = (measure_start_tick,measure_start_seconds, measure_start_microseconds_per_beat)
     return measure_starts_dict
 

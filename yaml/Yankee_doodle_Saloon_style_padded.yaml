@@ -1,44 +1,50 @@
 countdowns:
-  - start_measure: 8
+  - start_measure: 1
+    count_from: 8
+  - start_measure: 10
     count_from: 4
     offset_in_ms: -20
-  - start_measure: 26
+  - start_measure: 28
     count_from: 4
     offset_in_ms: -20
-  - start_measure: 44
+  - start_measure: 46
     count_from: 4
     offset_in_ms: -20
-  - start_measure: 62
+  - start_measure: 64
     count_from: 4
     offset_in_ms: -20
 instructions:
+  - text: "get ready"
+    measure_numbers: [1]
+    instruction_duration_in_measures: 2
+    voiced: false
   - text: "moving"
-    measure_numbers: [1, 3, 5]
+    measure_numbers: [3, 5, 7]
     voiced: true
   - text: "stop"
-    measure_numbers: [2, 4, 6]
+    measure_numbers: [4, 6, 8]
     voiced: true
   - text: "get ready to walk forward"
-    measure_numbers: [7, 43]
+    measure_numbers: [9, 45]
     voiced: true
     instruction_duration_in_measures: 2
   - text: "get ready to run forward"
-    measure_numbers: [25]
+    measure_numbers: [27]
     voiced: true
     instruction_duration_in_measures: 2
   - text: "get ready to stand still"
-    measure_numbers: [61]
+    measure_numbers: [63]
     voiced: true
     instruction_duration_in_measures: 2
   - text: "walking forward"
-    measure_numbers: [9, 45]
+    measure_numbers: [11, 47]
     voiced: false
     instruction_duration_in_measures: 16
   - text: "running forward"
-    measure_numbers: [27]
+    measure_numbers: [29]
     voiced: false
     instruction_duration_in_measures: 16
   - text: "standing still"
-    measure_numbers: [63]
+    measure_numbers: [65]
     voiced: false
     instruction_duration_in_measures: 16

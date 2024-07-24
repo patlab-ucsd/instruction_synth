@@ -87,7 +87,7 @@ def overlay_from_yaml(yaml_path=None, music=None, midifile=None, measures_info=N
     for ctd in stuff["countdowns"]:
         # get the tempo at the measure
         bpm = int(round(60*1000000.0/measure_starts[ctd["start_measure"]][2]))
-        music = overlay_countdown(music, midifile=midifile,start_measure=ctd["start_measure"],bpm=bpm/ctd.get("every_x_beat",1) ,count_from=ctd["count_from"],offset_in_ms=ctd["offset_in_ms"])
+        music = overlay_countdown(music, midifile=midifile,start_measure=ctd["start_measure"],bpm=bpm/ctd.get("every_x_beat",1) ,count_from=ctd["count_from"],offset_in_ms=ctd.get("offset_in_ms",0))
     instructions = stuff["instructions"]
     for info in instructions:
         text = "_".join(info["text"].split())
@@ -119,19 +119,14 @@ soundfont = "~/Music/FluidR3_GM/FluidR3_GM.sf2"
 # https://en.wikipedia.org/wiki/General_MIDI
 
 # when bpm is None, no tempo change is performed
-bpm = 120
+bpm = 130
 
 
 #original_name = "Yankee_doodle_Saloon_style"
 #midi_file =f"./midi/{original_name}.mid"
-#generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", change_inst=True, add_drum=True, change_tempo=True)
-#yaml_path = f"./yaml/{original_name}_padded.yaml"
+#generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", num_measures_padded = 8, change_inst=True, add_drum=True, change_tempo=True)
+#yaml_name = f"{original_name}_padded"
 
-
-#original_name = "doremi"
-#midi_file =f"./midi/{original_name}.mid"
-#generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", change_inst=True, add_drum=True, change_tempo=True)
-#yaml_path = f"./yaml/{original_name}_padded.yaml"
 
 #original_name = "doremi"
 #midi_file =f"./midi/{original_name}.mid"
