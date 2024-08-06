@@ -111,6 +111,7 @@ midi_file = "./midi/K265_cut.mid"
 midi_file = "./midi/Yankee_doodle_Saloon_style.mid"
 midi_file = "./midi/doremi.mid"
 midi_file = "./midi/fav.mid"
+midi_file = "./midi/K265_cutmore.mid"
 soundfont = "~/Music/FluidR3_GM/FluidR3_GM.sf2"
 
 # Convert MIDI to WAV
@@ -119,7 +120,7 @@ soundfont = "~/Music/FluidR3_GM/FluidR3_GM.sf2"
 # https://en.wikipedia.org/wiki/General_MIDI
 
 # when bpm is None, no tempo change is performed
-bpm = 130
+bpm = 120
 
 
 #original_name = "Yankee_doodle_Saloon_style"
@@ -127,17 +128,20 @@ bpm = 130
 #generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", num_measures_padded = 8, change_inst=True, add_drum=True, change_tempo=True)
 #yaml_name = f"{original_name}_padded"
 
+original_name = "K265_cutmore"
+midi_file =f"./midi/{original_name}.mid"
+generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", num_measures_padded = 8, change_inst=True, add_drum=True, change_tempo=True)
 
 #original_name = "doremi"
 #midi_file =f"./midi/{original_name}.mid"
 #yaml_name =f"{original_name}_padded_simple"
 #generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", num_measures_padded = 8, change_inst=True, add_drum=True, change_tempo=True)
 
-bpm = None
-original_name = "doremi_acc"
-midi_file =f"./midi/{original_name}.mid"
-yaml_name =f"doremi_padded_simple"
-generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", num_measures_padded = 0, change_inst=True, add_drum=True, change_tempo=False)
+#bpm = None
+#original_name = "doremi_acc"
+#midi_file =f"./midi/{original_name}.mid"
+#yaml_name =f"doremi_padded_simple"
+#generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", num_measures_padded = 0, change_inst=True, add_drum=True, change_tempo=False)
 
 
 #original_name = "fav"

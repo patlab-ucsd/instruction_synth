@@ -8,12 +8,16 @@ def examine_midi_msg(midi_file):
     """
     look at non-note msgs
     """
+    print("Examining:", midi_file)
     with mido.MidiFile(midi_file) as mid:
-        for track in mid.tracks:
+        for k,track in enumerate(mid.tracks):
+            current_tick = 0
+            print("track:",k)
             for msg in track:
+                current_tick += msg.time
                 #print(msg)
                 if "note" not in msg.type:
-                    print(msg)
+                    print(current_tick, msg)
 
 def generate_mp3_simple(midi_file, soundfont):
     """
@@ -33,31 +37,75 @@ def generate_mp3_simple(midi_file, soundfont):
         os.remove(wav_filename)
         print(f"Deleted intermediate WAV file: {wav_filename}")
 
+def trim_logic_midi(midi_file):
+    """
+    to ensure there is no logic gotchas (appears to be normal when open in logic, but has hidden events that cause the rendered audio to be super long)
+    """
+    clist = []
+    no_note_track_status = []
+    with mido.MidiFile(midi_file) as mid:
+        for track_index, track in enumerate(mid.tracks):
+            # to know whether it's a midi file in which the global controls are seperated from other midi events (as exported by logic)
+            no_note_track = True
+            current_tick = 0
+            note_tick = 0
+            for msg in track:
+                current_tick += msg.time
+                if "note_on" in msg.type:
+                    note_tick+=msg.time
+                    no_note_track = False
+            print(track_index, "TICKS",current_tick, note_tick)
+            clist.append(current_tick)
+            no_note_track_status.append(no_note_track)
+        real_length_in_tick = clist[-1]
+        print("real_length_in_tick",real_length_in_tick)
+        print("does the track have notes?",no_note_track_status)
+
+        #it's a logic midi file which might have timing issue in need of adjustment
+        if True in no_note_track_status:
+            trimmed_no_note_track = mido.MidiTrack()
+            current_tick = 0
+            for msg in mid.tracks[0]:
+                current_tick+=msg.time
+                # append the msg if it's within the real length
+                if current_tick<=real_length_in_tick:
+                    trimmed_no_note_track.append(msg)
+                else:
+                    new_msg = msg.copy(time=msg.time-(current_tick-real_length_in_tick))
+                    trimmed_no_note_track.append(new_msg)
+                    break
+            del mid.tracks[0]
+            mid.tracks.insert(0,trimmed_no_note_track)
+        return mid
 
 def midi_adjust_tempo(midi_file, bpm = 100):
-    with mido.MidiFile(midi_file) as mid:
-        #Tempo is in microseconds per beat (quarter note) default: 500000  (60 bpm)
-        new_mid = mido.MidiFile()
-        for track_index, track in enumerate(mid.tracks):
-            new_track = mido.MidiTrack()
-            # add the new track to the new midi file
-            new_mid.tracks.append(new_track)
+    print("ADJUST TEMPO")
+    mid = trim_logic_midi(midi_file)
+    #mid = mido.MidiFile(midi_file)
 
-            new_mid.ticks_per_beat=mid.ticks_per_beat
-            print("tempo:",mido.bpm2tempo(bpm))
-            # set tempo at the beginning
-            new_track.append(mido.MetaMessage('set_tempo', tempo=mido.bpm2tempo(bpm), time=0))
+    print("number of tracks:",len(mid.tracks))
+    #Tempo is in microseconds per beat (quarter note) default: 500000  (60 bpm)
+    new_mid = mido.MidiFile()
+    for track_index, track in enumerate(mid.tracks):
+        new_track = mido.MidiTrack()
+        # add the new track to the new midi file
+        new_mid.tracks.append(new_track)
 
-            for msg in track:
-                if msg.type == 'set_tempo':
-                    new_msg = mido.MetaMessage('set_tempo', tempo=mido.bpm2tempo(bpm), time=msg.time)
-                    new_track.append(new_msg)
-                else:
-                    new_track.append(msg)
+        new_mid.ticks_per_beat=mid.ticks_per_beat
+        print("tempo:",mido.bpm2tempo(bpm))
+        # set tempo at the beginning
+        new_track.append(mido.MetaMessage('set_tempo', tempo=mido.bpm2tempo(bpm), time=0))
 
-        adjusted_midi_file = f"{os.path.splitext(midi_file)[0]}_{bpm}.mid"
-        new_mid.save(adjusted_midi_file)
-        return adjusted_midi_file
+        for msg in track:
+            if msg.type == 'set_tempo':
+                new_msg = mido.MetaMessage('set_tempo', tempo=mido.bpm2tempo(bpm), time=msg.time)
+                new_track.append(new_msg)
+            else:
+                new_track.append(msg)
+
+    adjusted_midi_file = f"{os.path.splitext(midi_file)[0]}_{bpm}.mid"
+    new_mid.save(adjusted_midi_file)
+    return adjusted_midi_file
 
 def midi_adjust_inst(midi_file, soundfont = None, inst = "nylon-guitar"):
     """
@@ -65,6 +113,7 @@ def midi_adjust_inst(midi_file, soundfont = None, inst = "nylon-guitar"):
     assumes single instrument
     """
 
+    print("ADJUST INSTRUMENT")
     inst = insts[inst]
 
     with mido.MidiFile(midi_file) as mid:
@@ -87,7 +136,7 @@ def midi_adjust_inst(midi_file, soundfont = None, inst = "nylon-guitar"):
                 if msg.type == "channel_prefix":
                     continue
                 elif msg.type == 'program_change':
-                    print(track_index, "program_change")
+                    print(track_index, "program_change", msg)
                     new_msg = mido.Message('program_change', program=inst, channel=msg.channel, time=msg.time)
                     new_track.append(new_msg)
                 else:
@@ -103,7 +152,9 @@ def midi_add_padding_at_start(midi_file, num_measures = 6, numerator = 2, denomi
     """
     pad the beginning
     """
+    print("ADD PADDING")
     with mido.MidiFile(midi_file) as mid:
+        print("number of tracks:",len(mid.tracks))
         ticks_per_measure = int (numerator * mid.ticks_per_beat * 4 / denominator)
         total_ticks = num_measures * ticks_per_measure
 
@@ -152,6 +203,8 @@ def midi_add_simple_drum(midi_file, perc_inst = "woodblock"):
         # collect time changes
         time_changes = []
         current_tick = 0
+        # default
+        last_numerator, last_denominator = 4, 4
         for msg in mid.tracks[0]:
             current_tick += msg.time
             if msg.type == 'time_signature':
@@ -175,6 +228,7 @@ def midi_add_simple_drum(midi_file, perc_inst = "woodblock"):
             note_count = 0
             # add percussion at each beat
             for time in range(current_tick, next_tick, ticks_per_note):
+                #print(time)
                 if note_count%strong_beat_interval==0:
                     note_on_vel = 90
                 else:
@@ -217,12 +271,14 @@ def generate_mp3(midi_file, bpm = 100, soundfont = None, inst = "nylon-guitar", 
     adjusted_midi_file = midi_add_padding_at_start(midi_file, num_measures = num_measures_padded, numerator = numerator_padded, denominator = denominator_padded)
     if change_tempo:
         adjusted_midi_file = midi_adjust_tempo(adjusted_midi_file, bpm=bpm)
+        examine_midi_msg(adjusted_midi_file)
     if change_inst:
         adjusted_midi_file =  midi_adjust_inst(adjusted_midi_file, soundfont = soundfont, inst = inst)
     if add_drum:
         adjusted_midi_file = midi_add_simple_drum(adjusted_midi_file, perc_inst = perc_inst)
     generate_mp3_simple(adjusted_midi_file,soundfont)
-    examine_midi_msg(adjusted_midi_file)
+    print("")
+    #examine_midi_msg(adjusted_midi_file)
 
 insts = {"e-piano1":4,
          "e-piano2":5,
