@@ -1,0 +1,28 @@
+countdowns:
+  - start_measure: 1
+    count_from: 8
+instructions:
+  - text: "get ready"
+    measure_numbers: [1]
+    instruction_duration_in_measures: 4
+    voiced: false
+  - text: "moving"
+    measure_numbers: [5, 9, 13]
+    instruction_duration_in_measures: 2
+    voiced: true
+  - text: "stop"
+    measure_numbers: [7, 11, 15]
+    instruction_duration_in_measures: 2
+    voiced: true
+  - text: "climb up"
+    measure_numbers: [17, 49, 81, 113, 145, 177]
+    instruction_duration_in_measures: 8
+    voiced: true
+  - text: "have a rest"
+    measure_numbers: [25, 41, 57, 73, 89, 105, 121, 137, 153, 169, 185, 201]
+    instruction_duration_in_measures: 8
+    voiced: true
+  - text: "climb down"
+    measure_numbers: [33, 65, 97, 129, 161, 193]
+    instruction_duration_in_measures: 8
+    voiced: true

@@ -131,6 +131,7 @@ bpm = 120
 original_name = "K265_cutmore"
 midi_file =f"./midi/{original_name}.mid"
 generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", num_measures_padded = 8, change_inst=True, add_drum=True, change_tempo=True)
+yaml_name = f"{original_name}_padded"
 
 #original_name = "doremi"
 #midi_file =f"./midi/{original_name}.mid"
