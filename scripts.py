@@ -120,7 +120,7 @@ soundfont = "~/Music/FluidR3_GM/FluidR3_GM.sf2"
 # https://en.wikipedia.org/wiki/General_MIDI
 
 # when bpm is None, no tempo change is performed
-bpm = 120
+bpm = 130
 
 
 #original_name = "Yankee_doodle_Saloon_style"

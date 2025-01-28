@@ -150,7 +150,7 @@ def midi_adjust_inst(midi_file, soundfont = None, inst = "nylon-guitar"):
 
 def midi_add_padding_at_start(midi_file, num_measures = 6, numerator = 2, denominator = 4):
     """
-    pad the beginning
+    pad the beginning of the midi so that you could add synchronization instructions there
     """
     print("ADD PADDING")
     with mido.MidiFile(midi_file) as mid:
