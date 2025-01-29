@@ -67,18 +67,18 @@ def speedup_audio_file(filename, speedup_factor):
 
     print(f"{filename} sped up successfully.")
 
-def ticks_to_seconds(ticks, ticks_per_beat, microseconds_per_beat):
+def ticks_to_seconds(ticks, ticks_per_quarter_note, microseconds_per_quarter_note):
     """
     given the number of ticks and tempo, calculate the duration in seconds
     """
     # Calculate seconds from ticks based on tempo
-    return ticks / ticks_per_beat * microseconds_per_beat / 1000000
+    return ticks / ticks_per_quarter_note * microseconds_per_quarter_note / 1000000
 
 
-def current_tick_temporal_info(current_tick, tempo_changes, ticks_per_beat=480):
+def current_tick_temporal_info(current_tick, tempo_changes, ticks_per_quarter_note=480):
     """
     given the current tick, and a list of tempo changes
-    return the current time in seconds, and the tempo at current tick
+    return the current time in seconds, and the tempo (in microseconds_per_quarter_note) at current tick
     """
     #tempo_changes: tick, microseconds_per_beat, current_time_in_seconds
     t = [x[0] for x in tempo_changes]
@@ -91,9 +91,9 @@ def current_tick_temporal_info(current_tick, tempo_changes, ticks_per_beat=480):
         raise ValueError
     index, tick = find_le(t, current_tick)
     # seconds, microseconds_per_beat
-    current_microseconds_per_beat = tempo_changes[index][1]
+    microseconds_per_quarter_note = tempo_changes[index][1]
     last_tempo_change_time_in_seconds = tempo_changes[index][2]
-    return last_tempo_change_time_in_seconds+ticks_to_seconds(current_tick - tick, ticks_per_beat, current_microseconds_per_beat), current_microseconds_per_beat
+    return last_tempo_change_time_in_seconds+ticks_to_seconds(current_tick - tick, ticks_per_quarter_note, microseconds_per_quarter_note), microseconds_per_quarter_note
 
 
 def get_measure_starts(mid):
@@ -107,20 +107,22 @@ def get_measure_starts(mid):
 
     time_signature_changes = [] #numerator, denominator, tick, seconds
     tempo_changes = [] #tick, microseconds_per_beat
-    current_microseconds_per_beat = 500000 # midi default
+    microseconds_per_quarter_note = 500000 # midi default
     current_tick = 0
     current_time_in_seconds = 0
 
     for msg in mid.tracks[0]:
         # tick when the event happens
         # MIDI uses delta time: time since last message
+        # .ticks_per_beat: pulses per quarter note (PPQN)
+        # .tempo: microseconds per quarter note
         current_tick += msg.time
-        current_time_in_seconds+=ticks_to_seconds(msg.time, mid.ticks_per_beat, current_microseconds_per_beat)
+        current_time_in_seconds+=ticks_to_seconds(msg.time, mid.ticks_per_beat, microseconds_per_quarter_note)
 
         if msg.type == 'set_tempo':
-            current_microseconds_per_beat = msg.tempo
+            microseconds_per_quarter_note = msg.tempo
             # save the tempo change detail
-            tempo_changes.append((current_tick, current_microseconds_per_beat,current_time_in_seconds))
+            tempo_changes.append((current_tick, microseconds_per_quarter_note,current_time_in_seconds))
 
         if msg.type == 'time_signature':
             last_numerator, last_denominator = msg.numerator, msg.denominator
@@ -143,7 +145,7 @@ def get_measure_starts(mid):
         # for each measure
         for measure_start_tick in range(current_tick, next_tick, ticks_per_measure):
             measure_count+=1
-            measure_start_seconds, measure_start_microseconds_per_beat = current_tick_temporal_info(measure_start_tick, tempo_changes, ticks_per_beat = mid.ticks_per_beat)
+            measure_start_seconds, measure_start_microseconds_per_beat = current_tick_temporal_info(measure_start_tick, tempo_changes, ticks_per_quarter_note = mid.ticks_per_beat)
             measure_starts_dict[measure_count] = (measure_start_tick,measure_start_seconds, measure_start_microseconds_per_beat)
     return measure_starts_dict
 
