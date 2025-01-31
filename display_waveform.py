@@ -1,13 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from pydub import AudioSegment
 import sys
 from utils import *
-import librosa
-from IPython.display import Audio, display
-import ipywidgets as widgets
-import pygame
-from pygame.locals import QUIT, KEYDOWN, K_SPACE, K_s, K_p, K_q
 import time
 
 def plot_wave(filename):
