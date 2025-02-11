@@ -80,7 +80,7 @@ def video_from_measures_info(measures_info, videofile = None, audiofile = None):
     # Set the audio to the video clip
     final_clip = final_clip.set_audio(audio)
     # Write the result to a file
-    final_clip.write_videofile(videofile, fps=24, codec="h264")
+    final_clip.write_videofile(videofile, fps=24, codec="h264", ffmpeg_params=["-pix_fmt", "yuv420p"])
 
 def overlay_from_yaml(yaml_path=None, music=None, midifile=None, measures_info=None):
     stuff = load_yaml(yaml_path)
@@ -128,15 +128,15 @@ bpm = 130
 #generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", num_measures_padded = 8, change_inst=True, add_drum=True, change_tempo=True)
 #yaml_name = f"{original_name}_padded"
 
-original_name = "K265_cutmore"
-midi_file =f"./midi/{original_name}.mid"
-generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", num_measures_padded = 8, change_inst=True, add_drum=True, change_tempo=True)
-yaml_name = f"{original_name}_padded"
-
-#original_name = "doremi"
+#original_name = "K265_cutmore"
 #midi_file =f"./midi/{original_name}.mid"
-#yaml_name =f"{original_name}_padded_simple"
 #generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", num_measures_padded = 8, change_inst=True, add_drum=True, change_tempo=True)
+#yaml_name = f"{original_name}_padded"
+
+original_name = "doremi"
+midi_file =f"./midi/{original_name}.mid"
+yaml_name =f"{original_name}_padded_simple"
+generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", num_measures_padded = 8, change_inst=True, add_drum=True, change_tempo=True)
 
 #bpm = None
 #original_name = "doremi_acc"
