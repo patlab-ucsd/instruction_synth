@@ -11,6 +11,7 @@ def annotate_measure_info(text, starting_measure, ending_measure, measures_info 
     annotate measure info for each measure [starting_measure, ending_measure] (inclusive)
     """
     for measure in range(starting_measure,ending_measure+1):
+        print(starting_measure, ending_measure)
         if measure  < total_measures_count:
             ending_time = measure_starts[measure+1][1]
         else:
@@ -120,7 +121,7 @@ soundfont = "~/Music/FluidR3_GM/FluidR3_GM.sf2"
 # https://en.wikipedia.org/wiki/General_MIDI
 
 # when bpm is None, no tempo change is performed
-bpm = 120
+bpm = 80
 
 
 #original_name = "Yankee_doodle_Saloon_style"
@@ -129,9 +130,14 @@ bpm = 120
 #yaml_name = f"{original_name}_padded"
 
 
-original_name = "Yankee_doodle_Saloon_style_running_standing"
+#original_name = "Yankee_doodle_Saloon_style_running_standing"
+#midi_file =f"./midi/{original_name}.mid"
+#generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", num_measures_padded = 8, change_inst=True, add_drum=True, change_tempo=True)
+#yaml_name = f"{original_name}_padded"
+
+original_name = "metronome"
 midi_file =f"./midi/{original_name}.mid"
-generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", num_measures_padded = 8, change_inst=True, add_drum=True, change_tempo=True)
+generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="woodblock", perc_inst="woodblock", num_measures_padded = 32, numerator_padded=1, denominator_padded=4, change_inst=True, add_drum=True, change_tempo=True)
 yaml_name = f"{original_name}_padded"
 
 

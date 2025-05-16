@@ -151,25 +151,32 @@ def midi_adjust_inst(midi_file, soundfont = None, inst = "nylon-guitar"):
 def midi_add_padding_at_start(midi_file, num_measures = 6, numerator = 2, denominator = 4):
     """
     pad the beginning of the midi so that you could add synchronization instructions there
+    Note: when exporting from logic, use "all midi tracks as midi file", otherwise the meter default to 4/4
     """
-    print("ADD PADDING")
+    print(f"ADD PADDING: {midi_file}, num padded measures {num_measures} numerator {numerator} denominator {denominator}")
     with mido.MidiFile(midi_file) as mid:
         print("number of tracks:",len(mid.tracks))
-        ticks_per_measure = int (numerator * mid.ticks_per_beat * 4 / denominator)
-        total_ticks = num_measures * ticks_per_measure
-
-        # look for the beginning
-        padding_note = mido.Message("note_off", time = total_ticks)
         for track in mid.tracks:
             first_time_signature_index = 0
             index = 0
             # find the starting of the track
             for msg in track:
                 if msg.type == 'time_signature':
+                    print(msg)
                     first_time_signature_index = index
+                    print("midi_add_padding_at_start", "track numerator", msg.numerator,"track denominator", msg.denominator)
+                    track_numerator = msg.numerator
+                    track_denominator = msg.denominator
                     break
                 index+=1
             print("padding insert position (index of midi msg):", first_time_signature_index+1)
+            # must use 4 instead of track_denominator. due to midi weirdness
+            ticks_per_measure = int (numerator * mid.ticks_per_beat * 4 / denominator)
+            total_ticks = num_measures * ticks_per_measure
+
+            padding_note = mido.Message("note_off", time = total_ticks)
+            #time_sig_msg = mido.MetaMessage('time_signature',numerator=track_numerator, denominator=track_denominator,time=0)
+            #track.insert(0, time_sig_msg)
             track.insert(first_time_signature_index+1, padding_note)
         adjusted_midi_file = f"{os.path.splitext(midi_file)[0]}_padded.mid"
         mid.save(adjusted_midi_file)

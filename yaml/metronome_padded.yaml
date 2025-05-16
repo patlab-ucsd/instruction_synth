@@ -1,0 +1,482 @@
+countdowns:
+  - start_measure: 1
+    count_from: 8
+instructions:
+  - text: "get ready"
+    measure_numbers: [1]
+    instruction_duration_in_measures: 8
+    voiced: false
+  - text: "moving"
+    measure_numbers: [9, 17, 25]
+    voiced: true
+    instruction_duration_in_measures: 4
+  - text: "stop"
+    measure_numbers: [13, 21, 29]
+    voiced: true
+    instruction_duration_in_measures: 4
+countdowns:
+  - start_measure: 1
+    count_from: 8
+instructions:
+  - text: "get ready"
+    measure_numbers: [1]
+    instruction_duration_in_measures: 8
+    voiced: false
+  - text: "moving"
+    measure_numbers: [9, 17, 25]
+    voiced: true
+    instruction_duration_in_measures: 4
+  - text: "stop"
+    measure_numbers: [13, 21, 29]
+    voiced: true
+    instruction_duration_in_measures: 4
+  - text: "zero"
+    measure_numbers: [
+      # First digit of 00 (appears twice)
+      33, 35,
+      # First digit of 01 (appears twice)
+      37, 39,
+      # First digit of 02 (appears twice)
+      41, 43,
+      # First digit of 03 (appears twice)
+      45, 47,
+      # First digit of 04 (appears twice)
+      49, 51,
+      # First digit of 05 (appears twice)
+      53, 55,
+      # First digit of 06 (appears twice)
+      57, 59,
+      # First digit of 07 (appears twice)
+      61, 63,
+      # First digit of 08 (appears twice)
+      65, 67,
+      # First digit of 09 (appears twice)
+      69, 71,
+      # Second digit of 00 (appears twice)
+      34, 36,
+      # Second digit of 10 (appears twice)
+      74, 76,
+      # Second digit of 20 (appears twice)
+      114, 116,
+      # Second digit of 30 (appears twice)
+      154, 156,
+      # Second digit of 40 (appears twice)
+      194, 196,
+      # Second digit of 50 (appears twice)
+      234, 236,
+      # Second digit of 60 (appears twice)
+      274, 276,
+      # Second digit of 70 (appears twice)
+      314, 316,
+      # Second digit of 80 (appears twice)
+      354, 356,
+      # Second digit of 90 (appears twice)
+      394, 396
+    ]
+    voiced: true
+    rhythmic: true
+  - text: "one"
+    measure_numbers: [
+      # Second digit of 01 (appears twice)
+      38, 40,
+      # Second digit of 11 (appears twice)
+      78, 80,
+      # Second digit of 21 (appears twice)
+      118, 120,
+      # Second digit of 31 (appears twice)
+      158, 160,
+      # Second digit of 41 (appears twice)
+      198, 200,
+      # Second digit of 51 (appears twice)
+      238, 240,
+      # Second digit of 61 (appears twice)
+      278, 280,
+      # Second digit of 71 (appears twice)
+      318, 320,
+      # Second digit of 81 (appears twice)
+      358, 360,
+      # Second digit of 91 (appears twice)
+      398, 400,
+      # First digit of 10 (appears twice)
+      73, 75,
+      # First digit of 11 (appears twice)
+      77, 79,
+      # First digit of 12 (appears twice)
+      81, 83,
+      # First digit of 13 (appears twice)
+      85, 87,
+      # First digit of 14 (appears twice)
+      89, 91,
+      # First digit of 15 (appears twice)
+      93, 95,
+      # First digit of 16 (appears twice)
+      97, 99,
+      # First digit of 17 (appears twice)
+      101, 103,
+      # First digit of 18 (appears twice)
+      105, 107,
+      # First digit of 19 (appears twice)
+      109, 111
+    ]
+    voiced: true
+    rhythmic: true
+  - text: "two"
+    measure_numbers: [
+      # Second digit of 02 (appears twice)
+      42, 44,
+      # Second digit of 12 (appears twice)
+      82, 84,
+      # Second digit of 22 (appears twice)
+      122, 124,
+      # Second digit of 32 (appears twice)
+      162, 164,
+      # Second digit of 42 (appears twice)
+      202, 204,
+      # Second digit of 52 (appears twice)
+      242, 244,
+      # Second digit of 62 (appears twice)
+      282, 284,
+      # Second digit of 72 (appears twice)
+      322, 324,
+      # Second digit of 82 (appears twice)
+      362, 364,
+      # Second digit of 92 (appears twice)
+      402, 404,
+      # First digit of 20 (appears twice)
+      113, 115,
+      # First digit of 21 (appears twice)
+      117, 119,
+      # First digit of 22 (appears twice)
+      121, 123,
+      # First digit of 23 (appears twice)
+      125, 127,
+      # First digit of 24 (appears twice)
+      129, 131,
+      # First digit of 25 (appears twice)
+      133, 135,
+      # First digit of 26 (appears twice)
+      137, 139,
+      # First digit of 27 (appears twice)
+      141, 143,
+      # First digit of 28 (appears twice)
+      145, 147,
+      # First digit of 29 (appears twice)
+      149, 151
+    ]
+    voiced: true
+    rhythmic: true
+  - text: "three"
+    measure_numbers: [
+      # Second digit of 03 (appears twice)
+      46, 48,
+      # Second digit of 13 (appears twice)
+      86, 88,
+      # Second digit of 23 (appears twice)
+      126, 128,
+      # Second digit of 33 (appears twice)
+      166, 168,
+      # Second digit of 43 (appears twice)
+      206, 208,
+      # Second digit of 53 (appears twice)
+      246, 248,
+      # Second digit of 63 (appears twice)
+      286, 288,
+      # Second digit of 73 (appears twice)
+      326, 328,
+      # Second digit of 83 (appears twice)
+      366, 368,
+      # Second digit of 93 (appears twice)
+      406, 408,
+      # First digit of 30 (appears twice)
+      153, 155,
+      # First digit of 31 (appears twice)
+      157, 159,
+      # First digit of 32 (appears twice)
+      161, 163,
+      # First digit of 33 (appears twice)
+      165, 167,
+      # First digit of 34 (appears twice)
+      169, 171,
+      # First digit of 35 (appears twice)
+      173, 175,
+      # First digit of 36 (appears twice)
+      177, 179,
+      # First digit of 37 (appears twice)
+      181, 183,
+      # First digit of 38 (appears twice)
+      185, 187,
+      # First digit of 39 (appears twice)
+      189, 191
+    ]
+    voiced: true
+    rhythmic: true
+  - text: "four"
+    measure_numbers: [
+      # Second digit of 04 (appears twice)
+      50, 52,
+      # Second digit of 14 (appears twice)
+      90, 92,
+      # Second digit of 24 (appears twice)
+      130, 132,
+      # Second digit of 34 (appears twice)
+      170, 172,
+      # Second digit of 44 (appears twice)
+      210, 212,
+      # Second digit of 54 (appears twice)
+      250, 252,
+      # Second digit of 64 (appears twice)
+      290, 292,
+      # Second digit of 74 (appears twice)
+      330, 332,
+      # Second digit of 84 (appears twice)
+      370, 372,
+      # Second digit of 94 (appears twice)
+      410, 412,
+      # First digit of 40 (appears twice)
+      193, 195,
+      # First digit of 41 (appears twice)
+      197, 199,
+      # First digit of 42 (appears twice)
+      201, 203,
+      # First digit of 43 (appears twice)
+      205, 207,
+      # First digit of 44 (appears twice)
+      209, 211,
+      # First digit of 45 (appears twice)
+      213, 215,
+      # First digit of 46 (appears twice)
+      217, 219,
+      # First digit of 47 (appears twice)
+      221, 223,
+      # First digit of 48 (appears twice)
+      225, 227,
+      # First digit of 49 (appears twice)
+      229, 231
+    ]
+    voiced: true
+    rhythmic: true
+  - text: "five"
+    measure_numbers: [
+      # Second digit of 05 (appears twice)
+      54, 56,
+      # Second digit of 15 (appears twice)
+      94, 96,
+      # Second digit of 25 (appears twice)
+      134, 136,
+      # Second digit of 35 (appears twice)
+      174, 176,
+      # Second digit of 45 (appears twice)
+      214, 216,
+      # Second digit of 55 (appears twice)
+      254, 256,
+      # Second digit of 65 (appears twice)
+      294, 296,
+      # Second digit of 75 (appears twice)
+      334, 336,
+      # Second digit of 85 (appears twice)
+      374, 376,
+      # Second digit of 95 (appears twice)
+      414, 416,
+      # First digit of 50 (appears twice)
+      233, 235,
+      # First digit of 51 (appears twice)
+      237, 239,
+      # First digit of 52 (appears twice)
+      241, 243,
+      # First digit of 53 (appears twice)
+      245, 247,
+      # First digit of 54 (appears twice)
+      249, 251,
+      # First digit of 55 (appears twice)
+      253, 255,
+      # First digit of 56 (appears twice)
+      257, 259,
+      # First digit of 57 (appears twice)
+      261, 263,
+      # First digit of 58 (appears twice)
+      265, 267,
+      # First digit of 59 (appears twice)
+      269, 271
+    ]
+    voiced: true
+    rhythmic: true
+  - text: "six"
+    measure_numbers: [
+      # Second digit of 06 (appears twice)
+      58, 60,
+      # Second digit of 16 (appears twice)
+      98, 100,
+      # Second digit of 26 (appears twice)
+      138, 140,
+      # Second digit of 36 (appears twice)
+      178, 180,
+      # Second digit of 46 (appears twice)
+      218, 220,
+      # Second digit of 56 (appears twice)
+      258, 260,
+      # Second digit of 66 (appears twice)
+      298, 300,
+      # Second digit of 76 (appears twice)
+      338, 340,
+      # Second digit of 86 (appears twice)
+      378, 380,
+      # Second digit of 96 (appears twice)
+      418, 420,
+      # First digit of 60 (appears twice)
+      273, 275,
+      # First digit of 61 (appears twice)
+      277, 279,
+      # First digit of 62 (appears twice)
+      281, 283,
+      # First digit of 63 (appears twice)
+      285, 287,
+      # First digit of 64 (appears twice)
+      289, 291,
+      # First digit of 65 (appears twice)
+      293, 295,
+      # First digit of 66 (appears twice)
+      297, 299,
+      # First digit of 67 (appears twice)
+      301, 303,
+      # First digit of 68 (appears twice)
+      305, 307,
+      # First digit of 69 (appears twice)
+      309, 311
+    ]
+    voiced: true
+    rhythmic: true
+  - text: "seven"
+    measure_numbers: [
+      # Second digit of 07 (appears twice)
+      62, 64,
+      # Second digit of 17 (appears twice)
+      102, 104,
+      # Second digit of 27 (appears twice)
+      142, 144,
+      # Second digit of 37 (appears twice)
+      182, 184,
+      # Second digit of 47 (appears twice)
+      222, 224,
+      # Second digit of 57 (appears twice)
+      262, 264,
+      # Second digit of 67 (appears twice)
+      302, 304,
+      # Second digit of 77 (appears twice)
+      342, 344,
+      # Second digit of 87 (appears twice)
+      382, 384,
+      # Second digit of 97 (appears twice)
+      422, 424,
+      # First digit of 70 (appears twice)
+      313, 315,
+      # First digit of 71 (appears twice)
+      317, 319,
+      # First digit of 72 (appears twice)
+      321, 323,
+      # First digit of 73 (appears twice)
+      325, 327,
+      # First digit of 74 (appears twice)
+      329, 331,
+      # First digit of 75 (appears twice)
+      333, 335,
+      # First digit of 76 (appears twice)
+      337, 339,
+      # First digit of 77 (appears twice)
+      341, 343,
+      # First digit of 78 (appears twice)
+      345, 347,
+      # First digit of 79 (appears twice)
+      349, 351
+    ]
+    voiced: true
+    rhythmic: true
+  - text: "eight"
+    measure_numbers: [
+      # Second digit of 08 (appears twice)
+      66, 68,
+      # Second digit of 18 (appears twice)
+      106, 108,
+      # Second digit of 28 (appears twice)
+      146, 148,
+      # Second digit of 38 (appears twice)
+      186, 188,
+      # Second digit of 48 (appears twice)
+      226, 228,
+      # Second digit of 58 (appears twice)
+      266, 268,
+      # Second digit of 68 (appears twice)
+      306, 308,
+      # Second digit of 78 (appears twice)
+      346, 348,
+      # Second digit of 88 (appears twice)
+      386, 388,
+      # Second digit of 98 (appears twice)
+      426, 428,
+      # First digit of 80 (appears twice)
+      353, 355,
+      # First digit of 81 (appears twice)
+      357, 359,
+      # First digit of 82 (appears twice)
+      361, 363,
+      # First digit of 83 (appears twice)
+      365, 367,
+      # First digit of 84 (appears twice)
+      369, 371,
+      # First digit of 85 (appears twice)
+      373, 375,
+      # First digit of 86 (appears twice)
+      377, 379,
+      # First digit of 87 (appears twice)
+      381, 383,
+      # First digit of 88 (appears twice)
+      385, 387,
+      # First digit of 89 (appears twice)
+      389, 391
+    ]
+    voiced: true
+    rhythmic: true
+  - text: "nine"
+    measure_numbers: [
+      # Second digit of 09 (appears twice)
+      70, 72,
+      # Second digit of 19 (appears twice)
+      110, 112,
+      # Second digit of 29 (appears twice)
+      150, 152,
+      # Second digit of 39 (appears twice)
+      190, 192,
+      # Second digit of 49 (appears twice)
+      230, 232,
+      # Second digit of 59 (appears twice)
+      270, 272,
+      # Second digit of 69 (appears twice)
+      310, 312,
+      # Second digit of 79 (appears twice)
+      350, 352,
+      # Second digit of 89 (appears twice)
+      390, 392,
+      # Second digit of 99 (appears twice)
+      430, 432,
+      # First digit of 90 (appears twice)
+      393, 395,
+      # First digit of 91 (appears twice)
+      397, 399,
+      # First digit of 92 (appears twice)
+      401, 403,
+      # First digit of 93 (appears twice)
+      405, 407,
+      # First digit of 94 (appears twice)
+      409, 411,
+      # First digit of 95 (appears twice)
+      413, 415,
+      # First digit of 96 (appears twice)
+      417, 419,
+      # First digit of 97 (appears twice)
+      421, 423,
+      # First digit of 98 (appears twice)
+      425, 427,
+      # First digit of 99 (appears twice)
+      429, 431
+    ]
+    voiced: true
+    rhythmic: true
