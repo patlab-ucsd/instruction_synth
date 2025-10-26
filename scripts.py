@@ -121,7 +121,7 @@ soundfont = "~/Music/FluidR3_GM/FluidR3_GM.sf2"
 # https://en.wikipedia.org/wiki/General_MIDI
 
 # when bpm is None, no tempo change is performed
-bpm = 80
+bpm = 120
 
 
 #original_name = "Yankee_doodle_Saloon_style"
@@ -135,10 +135,100 @@ bpm = 80
 #generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", num_measures_padded = 8, change_inst=True, add_drum=True, change_tempo=True)
 #yaml_name = f"{original_name}_padded"
 
-original_name = "metronome"
+#original_name = "metronome"
+#midi_file =f"./midi/{original_name}.mid"
+#generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="woodblock", perc_inst="woodblock", num_measures_padded = 32, numerator_padded=1, denominator_padded=4, change_inst=True, add_drum=True, change_tempo=True)
+#yaml_name = f"{original_name}_padded"
+
+
+#original_name = "stroke_more"
+#midi_file =f"./midi/{original_name}.mid"
+#generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="accordion", perc_inst="woodblock", num_measures_padded = 20, numerator_padded=1, denominator_padded=4, change_inst=True, add_drum=True, change_tempo=True)
+#generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="accordion", perc_inst="woodblock", num_measures_padded = 32, numerator_padded=1, denominator_padded=4, change_inst=True, add_drum=True, change_tempo=True)
+#yaml_name = f"{original_name}_padded"
+
+#original_name = "roman_II"
+#midi_file =f"./midi/{original_name}.mid"
+#generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="accordion", perc_inst="woodblock", num_measures_padded = 20, numerator_padded=1, denominator_padded=4, change_inst=True, add_drum=True, change_tempo=True)
+#yaml_name = f"{original_name}_padded"
+
+#original_name = "roman_III"
+#midi_file =f"./midi/{original_name}.mid"
+#generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="accordion", perc_inst="woodblock", num_measures_padded = 20, numerator_padded=1, denominator_padded=4, change_inst=True, add_drum=True, change_tempo=True)
+#yaml_name = f"{original_name}_padded"
+
+#original_name = "roman_IV"
+#midi_file =f"./midi/{original_name}.mid"
+#generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="accordion", perc_inst="woodblock", num_measures_padded = 20, numerator_padded=1, denominator_padded=4, change_inst=True, add_drum=True, change_tempo=True)
+#yaml_name = f"{original_name}_padded"
+
+#original_name = "roman_V"
+#midi_file =f"./midi/{original_name}.mid"
+#generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="accordion", perc_inst="woodblock", num_measures_padded = 20, numerator_padded=1, denominator_padded=4, change_inst=True, add_drum=True, change_tempo=True)
+#yaml_name = f"{original_name}_padded"
+
+#original_name = "roman_VI"
+#midi_file =f"./midi/{original_name}.mid"
+#generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="accordion", perc_inst="woodblock", num_measures_padded = 20, numerator_padded=1, denominator_padded=4, change_inst=True, add_drum=True, change_tempo=True)
+#yaml_name = f"{original_name}_padded"
+
+
+
+
+#original_name = "roman_VII"
+#midi_file =f"./midi/{original_name}.mid"
+#generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="accordion", perc_inst="woodblock", num_measures_padded = 20, numerator_padded=1, denominator_padded=4, change_inst=True, add_drum=True, change_tempo=True)
+#yaml_name = f"{original_name}_padded"
+
+
+#original_name = "roman_VIII"
+#midi_file =f"./midi/{original_name}.mid"
+#generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="accordion", perc_inst="woodblock", num_measures_padded = 20, numerator_padded=1, denominator_padded=4, change_inst=True, add_drum=True, change_tempo=True)
+#yaml_name = f"{original_name}_padded"
+
+
+#original_name = "roman_IX"
+#midi_file =f"./midi/{original_name}.mid"
+#generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="accordion", perc_inst="woodblock", num_measures_padded = 20, numerator_padded=1, denominator_padded=4, change_inst=True, add_drum=True, change_tempo=True)
+#yaml_name = f"{original_name}_padded"
+
+#original_name = "roman_X"
+#midi_file =f"./midi/{original_name}.mid"
+#generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="accordion", perc_inst="woodblock", num_measures_padded = 20, numerator_padded=1, denominator_padded=4, change_inst=True, add_drum=True, change_tempo=True)
+#yaml_name = f"{original_name}_padded"
+
+
+#original_name = "stroke_clockwise_triangle"
+#midi_file =f"./midi/{original_name}.mid"
+#generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="accordion", perc_inst="woodblock", num_measures_padded = 24, numerator_padded=1, denominator_padded=4, change_inst=True, add_drum=True, change_tempo=True)
+#yaml_name = f"{original_name}_padded"
+
+#original_name = "stroke_counterclockwise_triangle"
+#midi_file =f"./midi/{original_name}.mid"
+#generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="accordion", perc_inst="woodblock", num_measures_padded = 24, numerator_padded=1, denominator_padded=4, change_inst=True, add_drum=True, change_tempo=True)
+#yaml_name = f"{original_name}_padded"
+
+
+#original_name = "stroke_rulb_lbru"
+#midi_file =f"./midi/{original_name}.mid"
+#generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", num_measures_padded = 32, numerator_padded=1, denominator_padded=4, change_inst=True, add_drum=True, change_tempo=True)
+#yaml_name = f"{original_name}_padded"
+
+
+original_name = "numbers1"
 midi_file =f"./midi/{original_name}.mid"
-generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="woodblock", perc_inst="woodblock", num_measures_padded = 32, numerator_padded=1, denominator_padded=4, change_inst=True, add_drum=True, change_tempo=True)
+generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", num_measures_padded = 16, numerator_padded=1, denominator_padded=4, change_inst=True, add_drum=True, change_tempo=True)
 yaml_name = f"{original_name}_padded"
+
+#original_name = "stroke_lurb_rblu"
+#midi_file =f"./midi/{original_name}.mid"
+#generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", num_measures_padded = 32, numerator_padded=1, denominator_padded=4, change_inst=True, add_drum=True, change_tempo=True)
+#yaml_name = f"{original_name}_padded"
+
+#original_name = "stroke_down_up"
+#midi_file =f"./midi/{original_name}.mid"
+#generate_mp3(midi_file, bpm = bpm, soundfont = soundfont, inst="e-piano1", perc_inst="woodblock", num_measures_padded = 32, numerator_padded=1, denominator_padded=4, change_inst=True, add_drum=True, change_tempo=True)
+#yaml_name = f"{original_name}_padded"
 
 
 #original_name = "K265_cutmore"
@@ -165,7 +255,7 @@ if bpm:
     mp3file = f"./music/{original_name}_padded_{bpm}_drum_added.mp3"
     midifile = f"./midi/{original_name}_padded_{bpm}_drum_added.mid"
     mp3file_overlay = f"./music/{original_name}_padded_{bpm}_drum_added_overlay.mp3"
-    mp4file = f"{yaml_name}_{bpm}.mp4"
+    mp4file = f"{yaml_name}_bpm{bpm}.mp4"
 else:
     mp3file = f"./music/{original_name}_padded_drum_added.mp3"
     midifile = f"./midi/{original_name}_padded_drum_added.mid"
