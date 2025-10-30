@@ -13,6 +13,8 @@ DAW-style MIDI Annotator (Tkinter)
 - **NEW**: No more overlapping audio — playback threads are joined and a shared synth sends ALL NOTES OFF on seek/play/stop.
 - **FIX**: Rectangle selection + copy/cut/paste now work reliably. Rectangles are tagged "ann" and
           copy/cut uses the current canvas selection, not a stale index.
+- **UPDATE**: Multi-select rectangles via Command-click (macOS) / Ctrl-click (Win/Linux). Copy/Cut uses the earliest
+              selected measure as the anchor; Paste goes to the current selection start or the playhead.
 """
 
 import math
@@ -292,7 +294,8 @@ class DAWAnnotator(tk.Tk):
         # Canvas rectangle selection + clipboard
         # Map canvas_id -> ("ins" or "cd", index, measure_start | None)
         self._rect_map: Dict[int, Tuple[str, int, Optional[int]]] = {}
-        self._selected_rect: Optional[Tuple[str, int, Optional[int]]] = None
+        # Multiple selected rectangle item ids
+        self._selected_rects: set[int] = set()
         self._clipboard: List[Tuple[str, int, Optional[Tuple[str,int,bool,bool]]]] = []
 
         self._build_ui()
@@ -409,6 +412,18 @@ class DAWAnnotator(tk.Tk):
         self.canvas.bind("<FocusIn>", lambda e: None)
         self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_canvas_up)
+
+        # Trackpad / mouse wheel: horizontal scroll on macOS/Windows; also support X11 Button-4/5
+        # Two-finger scroll (MouseWheel) mapped to horizontal pan since canvas has no vertical scroll
+        self.canvas.bind("<MouseWheel>", self._on_canvas_wheel)              # macOS/Windows vertical wheel -> horizontal pan
+        self.canvas.bind("<Shift-MouseWheel>", self._on_canvas_wheel_fast)   # faster pan with Shift
+        # X11/Linux legacy wheel events
+        self.canvas.bind("<Button-4>", lambda e: self._on_canvas_button_wheel(-1))
+        self.canvas.bind("<Button-5>", lambda e: self._on_canvas_button_wheel(+1))
+
+        # Multi-select toggles (macOS Command-click, Windows/Linux Ctrl-click)
+        self.canvas.bind("<Command-Button-1>", self.on_canvas_cmd_click)  # macOS
+        self.canvas.bind("<Control-Button-1>", self.on_canvas_cmd_click)  # Win/Linux
 
         # Install Edit menu and robust keyboard shortcuts
         self._install_edit_menu_and_shortcuts()
@@ -532,19 +547,46 @@ class DAWAnnotator(tk.Tk):
         m = int(beats // bpmr) + 1
         return max(1, min(m, int(self.total_measures.get())))
 
+    # --- Selection visuals (multi-rect) ---
     def _clear_canvas_selection_visual(self):
+        # remove all selection outlines
         self.canvas.delete("selbox")
 
-    def _show_canvas_selection_visual(self, item_id: int):
-        self._clear_canvas_selection_visual()
+    def _select_add(self, item_id: int):
+        # draw an outline box around this rectangle
         try:
             x0, y0, x1, y1 = self.canvas.bbox(item_id)
         except Exception:
             return
         pad = 2
-        self.canvas.create_rectangle(x0 - pad, y0 - pad, x1 + pad, y1 + pad,
-                                     outline="#ff2d55", width=2, dash=(4, 2),
-                                     tags=("selbox",))
+        self.canvas.create_rectangle(
+            x0 - pad, y0 - pad, x1 + pad, y1 + pad,
+            outline="#ff2d55", width=2, dash=(4, 2), tags=("selbox",)
+        )
+        self._selected_rects.add(item_id)
+
+    def _select_remove(self, item_id: int):
+        # remove the outline around one rectangle and unmark it
+        if item_id in self._selected_rects:
+            self._selected_rects.remove(item_id)
+        # easiest: clear all and re-draw remaining selected
+        self._clear_canvas_selection_visual()
+        for rid in list(self._selected_rects):
+            self._select_add(rid)
+
+    def _clear_all_selections(self):
+        self._selected_rects.clear()
+        self._clear_canvas_selection_visual()
+
+    def _toggle_selection_at_xy(self, x: float, y: float):
+        hit = self._hit_test_rect(x, y)
+        if not hit:
+            return
+        (_, _, _), item_id = hit
+        if item_id in self._selected_rects:
+            self._select_remove(item_id)
+        else:
+            self._select_add(item_id)
 
     def _current_playhead_measure(self) -> int:
         sec = float(getattr(self, '_playhead_sec', 0.0))
@@ -597,7 +639,8 @@ class DAWAnnotator(tk.Tk):
     def _redraw_all(self):
         self.canvas.delete("all")
         self._rect_map.clear()
-        self._selected_rect = None
+        # clear selection state on redraw (item ids will change)
+        self._clear_all_selections()
         if self.canvas.winfo_width() <= 2:
             return
         W, H, R, P, A = self._timeline_pixels()
@@ -656,7 +699,14 @@ class DAWAnnotator(tk.Tk):
             self.canvas.create_rectangle(x0, ya0, x1, ya1, fill="#dfe8ff", outline="#7dafff")
 
         # Instructions (tag each rect with 'ann' so hit testing works)
-        palette = ["#ffd166", "#ef476f", "#06d6a0", "#118ab2", "#8338ec", "#fb5607"]
+        palette = [
+            "#e69f00",  # orange-gold
+            "#56b4e9",  # sky blue
+            "#009e73",  # bluish green
+            "#f0e442",  # yellow
+            "#0072b2",  # blue
+            "#cc79a7",  # reddish purple
+        ]
         for idx, ins in enumerate(self.doc.instructions):
             color = palette[idx % len(palette)]
             for mstart in ins.measure_numbers:
@@ -664,7 +714,7 @@ class DAWAnnotator(tk.Tk):
                 x1 = self._x_for_measure(mstart + ins.instruction_duration_in_measures)
                 item_id = self.canvas.create_rectangle(x0, ya0 + 4, x1, ya1 - 4, fill=color, outline="", tags=("ann_rect", "ins", "ann"))
                 self._rect_map[item_id] = ("ins", idx, int(mstart))
-                self.canvas.create_text(x0 + 4, ya0 + 18, text=ins.text, anchor="w", fill="#222", tags=("ann_text",))
+                self.canvas.create_text(x0 + 4, ya0 + 18, text=ins.text, anchor="w", fill="#eeeeee", tags=("ann_text",))
 
         # Countdowns (also tagged 'ann')
         for c_idx, c in enumerate(self.doc.countdowns):
@@ -730,24 +780,36 @@ class DAWAnnotator(tk.Tk):
                 return meta, item_id
         return None
 
+    def on_canvas_cmd_click(self, e):
+        """Toggle selection on Cmd/Ctrl-click without affecting other selections."""
+        self.canvas.focus_set()
+        x = self.canvas.canvasx(e.x)
+        y = self.canvas.canvasy(e.y)
+        self._toggle_selection_at_xy(x, y)
+        return "break"
+
     def on_canvas_down(self, e):
+        """Single-click: select one rectangle (clearing others) or start measure drag on empty space."""
         self.canvas.focus_set()
         x = self.canvas.canvasx(e.x)
         y = self.canvas.canvasy(e.y)
         hit = self._hit_test_rect(x, y)
         if hit:
-            (kind, idx, mstart), item_id = hit
-            self._selected_rect = (kind, idx, mstart)
-            self._show_canvas_selection_visual(item_id)
+            # single-select (clear others)
+            self._clear_all_selections()
+            (_, _, _), item_id = hit
+            self._select_add(item_id)
+            # do NOT start a measure selection drag when clicking a rect
             return
-        self._clear_canvas_selection_visual()
-        self._selected_rect = None
+        # clicked empty space: clear rect selections and begin measure range drag
+        self._clear_all_selections()
         self.sel_start_measure = self._measure_at_x(x)
         self.sel_end_measure = self.sel_start_measure
         self._redraw_all()
 
     def on_canvas_drag(self, e):
-        if self._selected_rect is not None:
+        # If any rects are selected, ignore drag (we're not dragging rects)
+        if self._selected_rects:
             return
         if self.sel_start_measure is None:
             return
@@ -758,42 +820,110 @@ class DAWAnnotator(tk.Tk):
     def on_canvas_up(self, e):
         pass
 
+    def _pan_by_pixels(self, dx: float):
+        # Pixel-precise horizontal pan using xview_moveto
+        try:
+            bbox = self.canvas.bbox("all")
+            if not bbox:
+                return "break"
+            world_w = max(1, bbox[2] - bbox[0])
+            cv_w = max(1, self.canvas.winfo_width())
+            if world_w <= cv_w:
+                return "break"
+            left_frac, right_frac = self.canvas.xview()
+            cur_left_px = left_frac * world_w
+            new_left_px = min(max(0.0, cur_left_px + dx), world_w - cv_w)
+            self.canvas.xview_moveto(new_left_px / world_w)
+        except Exception:
+            pass
+        return "break"
+
+    # -------- Wheel / Trackpad horizontal scroll --------
+    
+    def _on_canvas_wheel(self, e):
+        # Pixel-precise slow pan mapped from e.delta
+        # Normalize delta across platforms: Windows uses multiples of 120, macOS is smaller continuous values
+        d = e.delta
+        if d == 0:
+            return "break"
+        norm = d / 120.0 if abs(d) >= 120 else d  # if big, treat as "notches"; else use raw (mac)
+        # Gentle speed: ~8 px per notch on Windows; small on macOS
+        pixels_per_unit = 8.0
+        dx = -norm * pixels_per_unit  # positive delta -> pan left
+        return self._pan_by_pixels(dx)
+
+        step = -1 if delta > 0 else 1
+        steps = step * max(1, int(abs(delta) / 60))  # scale with magnitude for responsiveness
+        try:
+            self.canvas.xview_scroll(steps, "units")
+        except Exception:
+            pass
+        return "break"
+
+    
+    def _on_canvas_wheel_fast(self, e):
+        # Faster pan (Shift+wheel): still conservative
+        d = e.delta
+        if d == 0:
+            return "break"
+        norm = d / 120.0 if abs(d) >= 120 else d
+        pixels_per_unit = 40.0  # page-like but not jarring
+        dx = -norm * pixels_per_unit
+        return self._pan_by_pixels(dx)
+
+        step = -1 if delta > 0 else 1
+        steps = step * max(1, int(abs(delta) / 60))
+        try:
+            self.canvas.xview_scroll(steps, "pages")
+        except Exception:
+            pass
+        return "break"
+
+    
+    def _on_canvas_button_wheel(self, direction):
+        # X11/Linux fallback where direction = -1 (up) or +1 (down)
+        pixels = 8.0 * (1 if direction > 0 else -1)
+        return self._pan_by_pixels(pixels)
+
+
+
     # -------- Copy/Cut/Paste/Delete helpers --------
     def _collect_selected_segments(self):
-        """Return a list of tuples describing the currently selected canvas segment(s)."""
+        """Return list of tuples for all selected rects: ('cd'| 'ins', start_measure, props_or_None)."""
         segs = []
-        if self._selected_rect is None:
-            return segs
-        kind, idx, mstart = self._selected_rect
-        if kind == 'cd':
-            try:
-                m = int(self.doc.countdowns[idx].start_measure)
-                segs.append(('cd', m, None))
-            except Exception:
-                pass
-        elif kind == 'ins':
-            try:
-                ins = self.doc.instructions[idx]
-                props = (ins.text, ins.instruction_duration_in_measures, ins.voiced, getattr(ins, 'rhythmic', False))
-                segs.append(('ins', int(mstart), props))
-            except Exception:
-                pass
+        for item_id in list(self._selected_rects):
+            meta = self._rect_map.get(item_id)
+            if not meta:
+                continue
+            kind, idx, mstart = meta
+            if kind == 'cd':
+                try:
+                    m = int(self.doc.countdowns[idx].start_measure)
+                    segs.append(('cd', m, None))
+                except Exception:
+                    pass
+            elif kind == 'ins':
+                try:
+                    ins = self.doc.instructions[idx]
+                    props = (ins.text, ins.instruction_duration_in_measures, ins.voiced, getattr(ins, 'rhythmic', False))
+                    segs.append(('ins', int(mstart), props))
+                except Exception:
+                    pass
         return segs
 
     def _kb_copy(self, e=None):
         segs = self._collect_selected_segments()
         if not segs:
-            return 'break'
-        # Normalize to anchor measure
+            return "break"
+        # earliest selected measure = copy anchor
         anchor = min(m for _, m, _ in segs)
-        normalized = [(kind, m - anchor, meta) for (kind, m, meta) in segs]
-        self._clipboard = normalized
-        return 'break'
+        self._clipboard = [(kind, m - anchor, meta) for (kind, m, meta) in segs]
+        return "break"
 
     def _kb_cut(self, e=None):
         self._kb_copy()
         self._kb_delete()
-        return 'break'
+        return "break"
 
     def _current_playhead_measure(self) -> int:
         try:
@@ -840,41 +970,52 @@ class DAWAnnotator(tk.Tk):
 
     def _kb_paste(self, e=None):
         if not self._clipboard:
-            return 'break'
-
-        #  selection start takes priority
+            return "break"
+        # selection start takes priority; otherwise use playhead
         if self.sel_start_measure is not None and self.sel_end_measure is not None:
             target = min(self.sel_start_measure, self.sel_end_measure)
         else:
             target = self._current_playhead_measure()
-
         self._add_segments_to_doc(target, self._clipboard)
+        self._clear_all_selections()
         self._refresh_lists()
         self._redraw_all()
         self.canvas.focus_set()
-        return 'break'
+        return "break"
 
     def _kb_delete(self, e=None):
-        # Delete the currently selected rectangle from doc
-        if self._selected_rect is None:
-            return 'break'
-        kind, idx, mstart = self._selected_rect
-        removed = False
-        if kind == "cd" and 0 <= idx < len(self.doc.countdowns):
-            del self.doc.countdowns[idx]
-            removed = True
-        elif kind == "ins" and 0 <= idx < len(self.doc.instructions):
-            ins = self.doc.instructions[idx]
-            if mstart in ins.measure_numbers:
-                ins.measure_numbers = [m for m in ins.measure_numbers if m != mstart]
-                removed = True
-            if not ins.measure_numbers:
-                del self.doc.instructions[idx]
-        if removed:
-            self._selected_rect = None
+        if not self._selected_rects:
+            return "break"
+        # Build a stable list of metas before mutations
+        metas = []
+        for item_id in list(self._selected_rects):
+            meta = self._rect_map.get(item_id)
+            if meta:
+                metas.append(meta)
+
+        changed = False
+        # Sort by kind so that removing instructions doesn't shift countdown indices (and vice versa)
+        for (kind, idx, mstart) in metas:
+            if kind == "cd" and 0 <= idx < len(self.doc.countdowns):
+                del self.doc.countdowns[idx]
+                changed = True
+        for (kind, idx, mstart) in metas:
+            if kind == "ins" and 0 <= idx < len(self.doc.instructions):
+                ins = self.doc.instructions[idx]
+                if mstart in ins.measure_numbers:
+                    ins.measure_numbers = [m for m in ins.measure_numbers if m != mstart]
+                    changed = True
+                if not ins.measure_numbers:
+                    try:
+                        self.doc.instructions.pop(idx)
+                    except Exception:
+                        pass
+
+        if changed:
+            self._clear_all_selections()
             self._refresh_lists()
             self._redraw_all()
-        return 'break'
+        return "break"
 
     def on_canvas_seek(self, e):
         """Seek to clicked position and (optionally) autoplay if already playing."""
@@ -968,8 +1109,7 @@ class DAWAnnotator(tk.Tk):
         self._kb_delete()
 
     def on_key_escape(self, event=None):
-        self._selected_rect = None
-        self._clear_canvas_selection_visual()
+        self._clear_all_selections()
 
     def on_key_space(self, event=None):
         if self._audio_thread and self._audio_thread.is_alive():
