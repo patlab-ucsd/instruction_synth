@@ -462,7 +462,10 @@ class DAWAnnotator(tk.Tk):
         self.c_list.pack(fill=tk.BOTH, expand=True, padx=6, pady=(0, 6))
         ttk.Button(cnt_box, text="Delete selected", command=self.on_del_countdown).pack(anchor="w", padx=6, pady=(0, 6))
         ttk.Separator(cnt_box, orient=tk.HORIZONTAL).pack(fill=tk.X, padx=6, pady=6)
-        ttk.Button(cnt_box, text="Export YAML", command=self.on_export_yaml).pack(anchor="w", padx=6, pady=4)
+        row2 = ttk.Frame(cnt_box)
+        row2.pack(anchor="w", fill=tk.X)
+        ttk.Button(row2, text="Load YAML", command=self.on_load_yaml).pack(side=tk.LEFT, padx=6, pady=4)
+        ttk.Button(row2, text="Export YAML", command=self.on_export_yaml).pack(side=tk.LEFT, padx=6, pady=4)
 
         # Keys
         self.bind_all('<Delete>', self.on_key_delete)
@@ -829,6 +832,66 @@ class DAWAnnotator(tk.Tk):
             self.on_play()
 
     # -------- File ops --------
+    def _doc_from_yaml_dict(self, data: dict) -> AnnoDoc:
+        """Build AnnoDoc from a parsed YAML dict (robust to missing keys)."""
+        doc = AnnoDoc()
+        # countdowns
+        for c in data.get("countdowns", []) or []:
+            try:
+                sm = int(c.get("start_measure", 1))
+                cf = int(c.get("count_from", 4))
+                off = int(c.get("offset_in_ms", 0) or 0)
+                doc.countdowns.append(Countdown(start_measure=sm, count_from=cf, offset_in_ms=off))
+            except Exception:
+                continue
+        # instructions
+        for it in data.get("instructions", []) or []:
+            try:
+                text = str(it.get("text", "")).strip()
+                if not text:
+                    continue
+                measures = it.get("measure_numbers", [])
+                if isinstance(measures, int):
+                    measures = [measures]
+                measures = [int(m) for m in measures]
+                dur = int(it.get("instruction_duration_in_measures", 1) or 1)
+                voiced = bool(it.get("voiced", False))
+                rhythmic = bool(it.get("rhythmic", False))
+                doc.instructions.append(Instruction(text=text, measure_numbers=measures, instruction_duration_in_measures=dur, voiced=voiced, rhythmic=rhythmic))
+            except Exception:
+                continue
+        return doc
+
+    def on_load_yaml(self):
+        path = filedialog.askopenfilename(filetypes=[("YAML", "*.yaml *.yml")])
+        if not path:
+            return
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f) or {}
+            new_doc = self._doc_from_yaml_dict(data)
+        except Exception as e:
+            messagebox.showerror("YAML", f"Failed to load YAML: {e}")
+            return
+
+        # Replace current document and refresh lists
+        self.doc = new_doc
+        self._refresh_lists()
+
+        # Heuristic: update total_measures to at least cover the latest annotation
+        max_bar = 0
+        for ins in self.doc.instructions:
+            end_bars = [m + ins.instruction_duration_in_measures - 1 for m in ins.measure_numbers]
+            max_bar = max(max_bar, *(end_bars or [0]))
+        for c in self.doc.countdowns:
+            max_bar = max(max_bar, c.start_measure)
+        if max_bar > 0:
+            self.total_measures.set(max(max_bar + 4, int(self.total_measures.get())))
+
+        # Redraw canvas so rectangles appear
+        self._redraw_all()
+        messagebox.showinfo("YAML", f"Loaded annotations from\n{path}")
+
     def on_load_midi(self):
         path = filedialog.askopenfilename(filetypes=[("MIDI", "*.mid *.midi")])
         if not path:
