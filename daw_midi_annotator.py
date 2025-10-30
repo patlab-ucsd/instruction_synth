@@ -11,6 +11,8 @@ DAW-style MIDI Annotator (Tkinter)
 - Select & delete rectangles with keyboard
 - Seek/play from anywhere on the canvas (right/middle/double/shift-click)
 - **NEW**: No more overlapping audio — playback threads are joined and a shared synth sends ALL NOTES OFF on seek/play/stop.
+- **FIX**: Rectangle selection + copy/cut/paste now work reliably. Rectangles are tagged "ann" and
+          copy/cut uses the current canvas selection, not a stale index.
 """
 
 import math
@@ -276,7 +278,6 @@ class DAWAnnotator(tk.Tk):
         self._start_t = 0.0
         self._paused_elapsed = 0.0
         self._play_length_sec = 0.0
-        self.autoplay_on_seek = False  # not used; seek logic below decides based on playing state
 
         # Shared synth (prevents overlap across threads)
         self._fs_shared: Optional[FluidPlayer] = None
@@ -288,9 +289,11 @@ class DAWAnnotator(tk.Tk):
         self.sel_start_measure: Optional[int] = None
         self.sel_end_measure: Optional[int] = None
 
-        # Canvas selection
+        # Canvas rectangle selection + clipboard
+        # Map canvas_id -> ("ins" or "cd", index, measure_start | None)
         self._rect_map: Dict[int, Tuple[str, int, Optional[int]]] = {}
         self._selected_rect: Optional[Tuple[str, int, Optional[int]]] = None
+        self._clipboard: List[Tuple[str, int, Optional[Tuple[str,int,bool,bool]]]] = []
 
         self._build_ui()
         self._redraw_all()
@@ -403,10 +406,28 @@ class DAWAnnotator(tk.Tk):
 
         self.canvas.bind("<Configure>", lambda e: self._redraw_all())
         self.canvas.bind("<Button-1>", self.on_canvas_down)
+        self.canvas.bind("<FocusIn>", lambda e: None)
         self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_canvas_up)
 
-        # Robust seek bindings (work across platforms)
+        # Install Edit menu and robust keyboard shortcuts
+        self._install_edit_menu_and_shortcuts()
+        try:
+            self.focus_force()
+            self.canvas.focus_set()
+        except Exception:
+            pass
+
+        # Keyboard bindings (macOS + Windows/Linux): copy/cut/paste/delete
+        for seq in ('<<Copy>>','<Command-c>','<Command-C>','<Control-c>','<Control-C>','<Command-KeyPress-c>','<Control-KeyPress-c>'):
+            self.bind_all(seq, self._kb_copy)
+        for seq in ('<<Cut>>','<Command-x>','<Command-X>','<Control-x>','<Control-X>','<Command-KeyPress-x>','<Control-KeyPress-x>'):
+            self.bind_all(seq, self._kb_cut)
+        for seq in ('<<Paste>>','<Command-v>','<Command-V>','<Control-v>','<Control-V>','<Command-KeyPress-v>','<Control-KeyPress-v>','<Shift-Insert>'):
+            self.bind_all(seq, self._kb_paste)
+        self.bind_all('<Delete>', self._kb_delete)
+
+        # Robust seek bindings
         self.canvas.bind("<Button-3>", self.on_canvas_seek)             # right-click
         self.canvas.bind("<Button-2>", self.on_canvas_seek)             # middle/right on mac
         self.canvas.bind("<Double-Button-1>", self.on_canvas_seek)      # double left
@@ -525,7 +546,14 @@ class DAWAnnotator(tk.Tk):
                                      outline="#ff2d55", width=2, dash=(4, 2),
                                      tags=("selbox",))
 
+    def _current_playhead_measure(self) -> int:
+        sec = float(getattr(self, '_playhead_sec', 0.0))
+        bpm, beats_per_measure = self._beats_measures()
+        beats = sec * (bpm / 60.0)
+        return max(1, int(beats // beats_per_measure) + 1)
+
     def _set_playhead_time(self, sec: float):
+        self._playhead_sec = max(0.0, float(sec))
         self._paused_elapsed = max(0.0, float(sec))
         x = self._x_for_time(self._paused_elapsed)
         H = self.canvas.winfo_height()
@@ -627,18 +655,18 @@ class DAWAnnotator(tk.Tk):
             x1 = self._x_for_measure(e + 1)
             self.canvas.create_rectangle(x0, ya0, x1, ya1, fill="#dfe8ff", outline="#7dafff")
 
-        # Instructions
+        # Instructions (tag each rect with 'ann' so hit testing works)
         palette = ["#ffd166", "#ef476f", "#06d6a0", "#118ab2", "#8338ec", "#fb5607"]
         for idx, ins in enumerate(self.doc.instructions):
             color = palette[idx % len(palette)]
             for mstart in ins.measure_numbers:
                 x0 = self._x_for_measure(mstart)
                 x1 = self._x_for_measure(mstart + ins.instruction_duration_in_measures)
-                item_id = self.canvas.create_rectangle(x0, ya0 + 4, x1, ya1 - 4, fill=color, outline="", tags=("ann_rect", "ins"))
+                item_id = self.canvas.create_rectangle(x0, ya0 + 4, x1, ya1 - 4, fill=color, outline="", tags=("ann_rect", "ins", "ann"))
                 self._rect_map[item_id] = ("ins", idx, int(mstart))
                 self.canvas.create_text(x0 + 4, ya0 + 18, text=ins.text, anchor="w", fill="#222", tags=("ann_text",))
 
-        # Countdowns
+        # Countdowns (also tagged 'ann')
         for c_idx, c in enumerate(self.doc.countdowns):
             try:
                 mstart = int(c.start_measure)
@@ -648,7 +676,7 @@ class DAWAnnotator(tk.Tk):
                 continue
             x0 = self._x_for_measure(mstart)
             x1 = x0 + cnt_beats * pxpb
-            item_id = self.canvas.create_rectangle(x0, ya0 + 4, x1, ya1 - 4, fill="#ffcf8a", outline="#ff9f1c", tags=("ann_rect", "cd"))
+            item_id = self.canvas.create_rectangle(x0, ya0 + 4, x1, ya1 - 4, fill="#ffcf8a", outline="#ff9f1c", tags=("ann_rect", "cd", "ann"))
             self._rect_map[item_id] = ("cd", c_idx, None)
             label = f"count {int(cnt_beats)}"
             if off != 0:
@@ -659,7 +687,41 @@ class DAWAnnotator(tk.Tk):
         xph = self._x_for_time(self._paused_elapsed)
         self.canvas.create_line(xph, 0, xph, ya1, fill="#ff2d55", width=2, tags=("playhead",))
 
+
+    def _install_edit_menu_and_shortcuts(self):
+        # --- Menu (helps macOS route Cmd- shortcuts reliably) ---
+        menubar = tk.Menu(self)
+        edit = tk.Menu(menubar, tearoff=0)
+        edit.add_command(label="Copy", accelerator="Cmd/Ctrl+C", command=lambda: self._kb_copy())
+        edit.add_command(label="Cut", accelerator="Cmd/Ctrl+X", command=lambda: self._kb_cut())
+        edit.add_command(label="Paste", accelerator="Cmd/Ctrl+V", command=lambda: self._kb_paste())
+        edit.add_separator()
+        edit.add_command(label="Delete", accelerator="Del", command=lambda: self._kb_delete())
+        menubar.add_cascade(label="Edit", menu=edit)
+        try:
+            self.config(menu=menubar)
+        except Exception:
+            pass
+
+        # --- Redundant bindings on both the toplevel and the canvas ---
+        targets = [self, self.canvas]
+        copies  = ('<<Copy>>','<Command-c>','<Command-C>','<Control-c>','<Control-C>')
+        cuts    = ('<<Cut>>','<Command-x>','<Command-X>','<Control-x>','<Control-X>')
+        pastes  = ('<<Paste>>','<Command-v>','<Command-V>','<Control-v>','<Control-V>','<Shift-Insert>')
+        for t in targets:
+            for seq in copies:  t.bind(seq, self._kb_copy)
+            for seq in cuts:    t.bind(seq, self._kb_cut)
+            for seq in pastes:  t.bind(seq, self._kb_paste)
+            t.bind('<Delete>', self._kb_delete)
+
+        # Ensure the canvas keeps focus so key events reach it
+        try:
+            self.after(50, self.canvas.focus_set)
+        except Exception:
+            pass
+
     # -------- Canvas interactions --------
+
     def _hit_test_rect(self, x: float, y: float):
         items = self.canvas.find_overlapping(x, y, x, y)
         for item_id in reversed(items):
@@ -696,16 +758,134 @@ class DAWAnnotator(tk.Tk):
     def on_canvas_up(self, e):
         pass
 
+    # -------- Copy/Cut/Paste/Delete helpers --------
+    def _collect_selected_segments(self):
+        """Return a list of tuples describing the currently selected canvas segment(s)."""
+        segs = []
+        if self._selected_rect is None:
+            return segs
+        kind, idx, mstart = self._selected_rect
+        if kind == 'cd':
+            try:
+                m = int(self.doc.countdowns[idx].start_measure)
+                segs.append(('cd', m, None))
+            except Exception:
+                pass
+        elif kind == 'ins':
+            try:
+                ins = self.doc.instructions[idx]
+                props = (ins.text, ins.instruction_duration_in_measures, ins.voiced, getattr(ins, 'rhythmic', False))
+                segs.append(('ins', int(mstart), props))
+            except Exception:
+                pass
+        return segs
+
+    def _kb_copy(self, e=None):
+        segs = self._collect_selected_segments()
+        if not segs:
+            return 'break'
+        # Normalize to anchor measure
+        anchor = min(m for _, m, _ in segs)
+        normalized = [(kind, m - anchor, meta) for (kind, m, meta) in segs]
+        self._clipboard = normalized
+        return 'break'
+
+    def _kb_cut(self, e=None):
+        self._kb_copy()
+        self._kb_delete()
+        return 'break'
+
+    def _current_playhead_measure(self) -> int:
+        try:
+            sec = float(getattr(self, '_playhead_sec', self._paused_elapsed))
+        except Exception:
+            sec = self._paused_elapsed
+        bpm, bpmr = self._beats_measures()
+        beats = sec * (bpm / 60.0)
+        m = int(beats // bpmr) + 1
+        return max(1, m)
+
+    def _add_segments_to_doc(self, target_measure: int, segs):
+        # Add segments (normalized by delta) at target_measure; merge by properties
+        add_map = {}
+        cds_to_add = []
+        for (kind, delta, meta) in segs:
+            mstart = target_measure + int(delta)
+            if kind == 'cd':
+                cds_to_add.append(mstart)
+            else:
+                text, dur, voiced, rhythmic = meta
+                key = (text, int(dur), bool(voiced), bool(rhythmic))
+                add_map.setdefault(key, []).append(mstart)
+        # Merge into existing instructions when possible
+        for key, starts in add_map.items():
+            starts = sorted(set(starts))
+            # find existing
+            found = None
+            for ins in self.doc.instructions:
+                if (ins.text, ins.instruction_duration_in_measures, ins.voiced, getattr(ins, 'rhythmic', False)) == key:
+                    found = ins
+                    break
+            if found is None:
+                text, dur, voiced, rhythmic = key
+                self.doc.instructions.append(Instruction(text=text, measure_numbers=starts, instruction_duration_in_measures=dur, voiced=voiced, rhythmic=rhythmic))
+            else:
+                merged = sorted(set(found.measure_numbers) | set(starts))
+                found.measure_numbers = merged
+        # Paste countdowns (use first countdown's count_from or default 8)
+        if cds_to_add:
+            cf = self.doc.countdowns[0].count_from if self.doc.countdowns else 8
+            for m in cds_to_add:
+                self.doc.countdowns.append(Countdown(start_measure=int(m), count_from=int(cf), offset_in_ms=0))
+
+    def _kb_paste(self, e=None):
+        if not self._clipboard:
+            return 'break'
+
+        #  selection start takes priority
+        if self.sel_start_measure is not None and self.sel_end_measure is not None:
+            target = min(self.sel_start_measure, self.sel_end_measure)
+        else:
+            target = self._current_playhead_measure()
+
+        self._add_segments_to_doc(target, self._clipboard)
+        self._refresh_lists()
+        self._redraw_all()
+        self.canvas.focus_set()
+        return 'break'
+
+    def _kb_delete(self, e=None):
+        # Delete the currently selected rectangle from doc
+        if self._selected_rect is None:
+            return 'break'
+        kind, idx, mstart = self._selected_rect
+        removed = False
+        if kind == "cd" and 0 <= idx < len(self.doc.countdowns):
+            del self.doc.countdowns[idx]
+            removed = True
+        elif kind == "ins" and 0 <= idx < len(self.doc.instructions):
+            ins = self.doc.instructions[idx]
+            if mstart in ins.measure_numbers:
+                ins.measure_numbers = [m for m in ins.measure_numbers if m != mstart]
+                removed = True
+            if not ins.measure_numbers:
+                del self.doc.instructions[idx]
+        if removed:
+            self._selected_rect = None
+            self._refresh_lists()
+            self._redraw_all()
+        return 'break'
+
     def on_canvas_seek(self, e):
-        """Seek to clicked position and (optionally) autoplay."""
+        """Seek to clicked position and (optionally) autoplay if already playing."""
         self.canvas.focus_set()
         x = self.canvas.canvasx(e.x)
         t = self._time_for_x(x)
+        # check playing state before stopping
+        was_playing = bool(self._audio_thread and self._audio_thread.is_alive() and not self._pause_evt.is_set())
         # fully stop any ongoing playback and silence synth
         self._stop_and_join_audio()
         self._set_playhead_time(t)
-        # Auto-play only if we were actively playing before the seek (not paused)
-        was_playing = bool(self._audio_thread and self._audio_thread.is_alive() and not self._pause_evt.is_set())
         if was_playing:
             self.on_play()
         else:
@@ -782,44 +962,10 @@ class DAWAnnotator(tk.Tk):
         self._refresh_lists()
         self._redraw_all()
 
-    # -------- Keyboard --------
+    # -------- Misc keys --------
     def on_key_delete(self, event=None):
-        if self._selected_rect is not None:
-            kind, idx, mstart = self._selected_rect
-            if kind == "ins" and 0 <= idx < len(self.doc.instructions):
-                ins = self.doc.instructions[idx]
-                if mstart in ins.measure_numbers:
-                    ins.measure_numbers = [m for m in ins.measure_numbers if m != mstart]
-                if not ins.measure_numbers:
-                    del self.doc.instructions[idx]
-                self._selected_rect = None
-                self._refresh_lists()
-                self._redraw_all()
-                return
-            if kind == "cd" and 0 <= idx < len(self.doc.countdowns):
-                del self.doc.countdowns[idx]
-                self._selected_rect = None
-                self._refresh_lists()
-                self._redraw_all()
-                return
-
-        widget = self.focus_get()
-        try:
-            if widget is self.ins_list and self.ins_list.curselection():
-                self.on_del_instruction()
-                return
-        except Exception:
-            pass
-        try:
-            if widget is self.c_list and self.c_list.curselection():
-                self.on_del_countdown()
-                return
-        except Exception:
-            pass
-        if self.sel_start_measure is not None or self.sel_end_measure is not None:
-            self.sel_start_measure = None
-            self.sel_end_measure = None
-            self._redraw_all()
+        # route to same delete as canvas selection
+        self._kb_delete()
 
     def on_key_escape(self, event=None):
         self._selected_rect = None
@@ -993,6 +1139,7 @@ class DAWAnnotator(tk.Tk):
         elapsed = (time.perf_counter() - self._start_t) + self._paused_elapsed
         if elapsed >= self._play_length_sec:
             return
+        self._playhead_sec = elapsed
         x = self._x_for_time(elapsed)
         H = self.canvas.winfo_height()
         self.canvas.coords("playhead", x, 0, x, H)
