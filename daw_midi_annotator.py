@@ -262,7 +262,7 @@ class DAWAnnotator(tk.Tk):
         # State
         self.midi: Optional[MidiSummary] = None
         self.midi_path: Optional[str] = None
-        self.sf2_path: Optional[str] = None
+        self.sf2_path: Optional[str] = os.path.expanduser("~/Music/FluidR3_GM/FluidR3_GM.sf2")
         self.doc = AnnoDoc()
 
         # Transport / UI vars
@@ -283,6 +283,7 @@ class DAWAnnotator(tk.Tk):
 
         # Shared synth (prevents overlap across threads)
         self._fs_shared: Optional[FluidPlayer] = None
+        self._ensure_synth()
 
         # UI loop handle
         self._ui_after = None
@@ -300,6 +301,8 @@ class DAWAnnotator(tk.Tk):
 
         self._build_ui()
         self._redraw_all()
+        # Set the sf2 path to default path
+        self.sf2_lbl.config(text=os.path.basename(self.sf2_path))
 
         # Ensure synth is cleaned up on close
         self.protocol("WM_DELETE_WINDOW", self._on_close)
@@ -319,6 +322,8 @@ class DAWAnnotator(tk.Tk):
         if self._fs_shared is None:
             try:
                 driver = os.environ.get("FLUIDSYNTH_DRIVER", None)
+                print(f"driver path: {driver}")
+                print(f"sf2 path: {self.sf2_path}")
                 self._fs_shared = FluidPlayer(self.sf2_path, driver=driver)
             except Exception as e:
                 print("[fluidsynth disabled]", e)
