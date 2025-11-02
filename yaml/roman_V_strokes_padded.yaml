@@ -1,0 +1,22 @@
+countdowns:
+- start_measure: 1
+  count_from: 8
+  offset_in_ms: 0
+instructions:
+- text: moving
+  measure_numbers: [9, 13, 17]
+  instruction_duration_in_measures: 2
+  voiced: true
+- text: rest
+  measure_numbers: [11, 15, 19, 23, 27, 31, 35, 39, 43, 47, 51, 55, 59, 63, 67, 71, 75, 79, 83, 87, 91, 95, 99, 103, 107,
+    111, 115, 119]
+  instruction_duration_in_measures: 2
+  voiced: true
+- text: lu_rb
+  measure_numbers: [21, 25, 29, 33, 37, 41, 45, 49, 53, 57, 61, 65, 69, 73, 77, 81, 85, 89, 93, 97, 101, 105, 109, 113, 117]
+  instruction_duration_in_measures: 1
+  voiced: true
+- text: lb_ru
+  measure_numbers: [22, 26, 30, 34, 38, 42, 46, 50, 54, 58, 62, 66, 70, 74, 78, 82, 86, 90, 94, 98, 102, 106, 110, 114, 118]
+  instruction_duration_in_measures: 1
+  voiced: true
