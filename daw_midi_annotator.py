@@ -15,6 +15,8 @@ DAW-style MIDI Annotator (Tkinter)
           copy/cut uses the current canvas selection, not a stale index.
 - **UPDATE**: Multi-select rectangles via Command-click (macOS) / Ctrl-click (Win/Linux). Copy/Cut uses the earliest
               selected measure as the anchor; Paste goes to the current selection start or the playhead.
+- **NEW**: Undo / Redo for annotation edits (Cmd–Z / Cmd–Shift–Z). State snapshots include instructions, countdowns,
+           and measure selection. Redo history clears on new edits.
 """
 
 import math
@@ -23,6 +25,7 @@ import threading
 import time
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Union
+import copy
 
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
@@ -299,6 +302,17 @@ class DAWAnnotator(tk.Tk):
         self._selected_rects: set[int] = set()
         self._clipboard: List[Tuple[str, int, Optional[Tuple[str,int,bool,bool]]]] = []
 
+        # --- Undo/Redo stacks ---
+        self._undo_stack: List[dict] = []
+        self._redo_stack: List[dict] = []
+        self._undo_limit = 100
+        self._save_undo_checkpoint("initial")
+
+        # --- Inline Listbox editor state (minimal addition) ---
+        self._lb_edit_entry: Optional[tk.Entry] = None
+        self._lb_edit_index: Optional[int] = None
+        self._lb_edit_old_text: Optional[str] = None
+
         self._build_ui()
         self._redraw_all()
         # Set the sf2 path to default path
@@ -357,6 +371,108 @@ class DAWAnnotator(tk.Tk):
                 pass
             self._fs_shared = None
         self.destroy()
+
+    # ======= UNDO / REDO =======
+    """
+    def _current_state_snapshot(self) -> dict:
+        doc_copy = copy.deepcopy(self.doc)
+        return {
+            "doc": doc_copy,
+            "sel": (self.sel_start_measure, self.sel_end_measure),
+        }
+    def _restore_state(self, snap: dict):
+        self.doc = copy.deepcopy(snap.get("doc", AnnoDoc()))
+        sel = snap.get("sel", (None, None))
+        self.sel_start_measure, self.sel_end_measure = sel
+        self._clear_all_selections()
+        self._refresh_lists()
+        self._redraw_all()
+    """
+    def _current_state_snapshot(self) -> dict:
+        doc_copy = copy.deepcopy(self.doc)
+        return {
+            "doc": doc_copy,
+            "sel": (self.sel_start_measure, self.sel_end_measure),
+            # --- NEW: capture MIDI + transport/UI state so it survives undo/redo ---
+            "midi": copy.deepcopy(self.midi) if self.midi is not None else None,
+            "midi_path": self.midi_path,
+            "bpm": float(self.bpm.get()),
+            "ts": (int(self.ts_num.get()), int(self.ts_den.get())),
+            "total_measures": int(self.total_measures.get()),
+            "px_per_beat": float(self.px_per_beat.get()),
+            "metronome_on": bool(self.metronome_on.get()),
+            "_paused_elapsed": float(getattr(self, "_paused_elapsed", 0.0)),
+            "_playhead_sec": float(getattr(self, "_playhead_sec", 0.0)),
+        }
+
+    def _restore_state(self, snap: dict):
+        # Document + selection (existing)
+        self.doc = copy.deepcopy(snap.get("doc", AnnoDoc()))
+        sel = snap.get("sel", (None, None))
+        self.sel_start_measure, self.sel_end_measure = sel
+
+        # --- NEW: restore MIDI + transport/UI vars ---
+        self.midi = copy.deepcopy(snap.get("midi", None))
+        self.midi_path = snap.get("midi_path", None)
+
+        bpm = snap.get("bpm", None)
+        if bpm is not None:
+            self.bpm.set(bpm)
+
+        ts = snap.get("ts", None)
+        if ts is not None and isinstance(ts, tuple) and len(ts) == 2:
+            self.ts_num.set(int(ts[0]))
+            self.ts_den.set(int(ts[1]))
+
+        tm = snap.get("total_measures", None)
+        if tm is not None:
+            self.total_measures.set(int(tm))
+
+        px = snap.get("px_per_beat", None)
+        if px is not None:
+            self.px_per_beat.set(float(px))
+
+        mtron = snap.get("metronome_on", None)
+        if mtron is not None:
+            self.metronome_on.set(bool(mtron))
+
+        self._paused_elapsed = float(snap.get("_paused_elapsed", 0.0))
+        self._playhead_sec  = float(snap.get("_playhead_sec", 0.0))
+
+        # UI refresh (existing behavior preserved)
+        self._clear_all_selections()
+        self._refresh_lists()
+        self._redraw_all()
+        # keep the playhead consistent
+        try:
+            self._set_playhead_time(self._playhead_sec)
+        except Exception:
+            pass
+
+    def _save_undo_checkpoint(self, _reason: str = ""):
+        """Push current state to the undo stack; clear redo."""
+        snap = self._current_state_snapshot()
+        self._undo_stack.append(snap)
+        if len(self._undo_stack) > self._undo_limit:
+            self._undo_stack.pop(0)
+        self._redo_stack.clear()
+
+    def on_undo(self, e=None):
+        if len(self._undo_stack) <= 1:
+            return "break"
+        cur = self._undo_stack.pop()
+        prev = self._undo_stack[-1]
+        self._redo_stack.append(cur)
+        self._restore_state(prev)
+        return "break"
+
+    def on_redo(self, e=None):
+        if not self._redo_stack:
+            return "break"
+        nxt = self._redo_stack.pop()
+        self._undo_stack.append(self._current_state_snapshot())
+        self._restore_state(nxt)
+        return "break"
 
     # -------- UI --------
     def _build_ui(self):
@@ -484,6 +600,9 @@ class DAWAnnotator(tk.Tk):
         self.ins_list = tk.Listbox(instr_box, height=6)
         self.ins_list.pack(fill=tk.BOTH, expand=True, padx=6, pady=(0, 6))
         ttk.Button(instr_box, text="Delete selected", command=self.on_del_instruction).pack(anchor="w", padx=6, pady=(0, 6))
+
+        # Double-click a list item to edit only the TEXT part. Commit with Enter or focus-out.
+        self.ins_list.bind('<Double-Button-1>', self._begin_ins_text_edit)
 
         cnt_box = ttk.Labelframe(bottom, text="Countdowns / Export")
         cnt_box.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(10, 0))
@@ -752,6 +871,10 @@ class DAWAnnotator(tk.Tk):
         edit.add_command(label="Paste", accelerator="Cmd/Ctrl+V", command=lambda: self._kb_paste())
         edit.add_separator()
         edit.add_command(label="Delete", accelerator="Del", command=lambda: self._kb_delete())
+        edit.add_separator()
+        # macOS-specific accelerators per user request
+        edit.add_command(label="Undo", accelerator="Cmd+Z", command=self.on_undo)
+        edit.add_command(label="Redo", accelerator="Cmd+Shift+Z", command=self.on_redo)
         menubar.add_cascade(label="Edit", menu=edit)
         try:
             self.config(menu=menubar)
@@ -768,6 +891,11 @@ class DAWAnnotator(tk.Tk):
             for seq in cuts:    t.bind(seq, self._kb_cut)
             for seq in pastes:  t.bind(seq, self._kb_paste)
             t.bind('<Delete>', self._kb_delete)
+
+            # Undo / Redo (macOS only per request)
+            t.bind('<Command-z>', self.on_undo)
+            t.bind('<Command-Z>', self.on_undo)
+            t.bind('<Command-Shift-Z>', self.on_redo)
 
         # Ensure the canvas keeps focus so key events reach it
         try:
@@ -926,6 +1054,7 @@ class DAWAnnotator(tk.Tk):
         return "break"
 
     def _kb_cut(self, e=None):
+        self._save_undo_checkpoint("cut")
         self._kb_copy()
         self._kb_delete()
         return "break"
@@ -976,6 +1105,7 @@ class DAWAnnotator(tk.Tk):
     def _kb_paste(self, e=None):
         if not self._clipboard:
             return "break"
+        self._save_undo_checkpoint("paste")
         # selection start takes priority; otherwise use playhead
         if self.sel_start_measure is not None and self.sel_end_measure is not None:
             target = min(self.sel_start_measure, self.sel_end_measure)
@@ -991,6 +1121,7 @@ class DAWAnnotator(tk.Tk):
     def _kb_delete(self, e=None):
         if not self._selected_rects:
             return "break"
+        self._save_undo_checkpoint("delete_selection")
         # Build a stable list of metas before mutations
         metas = []
         for item_id in list(self._selected_rects):
@@ -1047,6 +1178,7 @@ class DAWAnnotator(tk.Tk):
         if not text:
             messagebox.showinfo("Instruction", "Text cannot be empty.")
             return
+        self._save_undo_checkpoint("add_instruction")
         dur = max(1, int(self.tx_dur.get()))
         step = int(self.tx_step.get()) or dur
         voiced = bool(self.tx_voiced.get())
@@ -1066,6 +1198,7 @@ class DAWAnnotator(tk.Tk):
         idxs = list(self.ins_list.curselection())
         if not idxs:
             return
+        self._save_undo_checkpoint("delete_instruction_from_list")
         for i in reversed(idxs):
             if 0 <= i < len(self.doc.instructions):
                 del self.doc.instructions[i]
@@ -1088,8 +1221,82 @@ class DAWAnnotator(tk.Tk):
             else:
                 self.c_list.insert(tk.END, f"start_measure: {c.start_measure} · count_from: {c.count_from}")
 
+    # ======== Minimal addition: Inline edit for instruction text ========
+    def _begin_ins_text_edit(self, event):
+        # Determine which list item was clicked
+        index = self.ins_list.nearest(event.y)
+        if index < 0 or index >= len(self.doc.instructions):
+            return
+        # Use the underlying Instruction's text as the "old key"
+        old_text = self.doc.instructions[index].text
+
+        bbox = self.ins_list.bbox(index)
+        if not bbox:
+            return
+        x, y, w, h = bbox
+
+        # Create an Entry overlay only for editing the TEXT
+        if self._lb_edit_entry is not None:
+            try:
+                self._lb_edit_entry.destroy()
+            except Exception:
+                pass
+
+        entry = tk.Entry(self.ins_list)
+        entry.insert(0, old_text)
+        entry.select_range(0, tk.END)
+        entry.focus_set()
+        entry.place(x=x+2, y=y, width=w-4, height=h)
+
+        # Save editor state
+        self._lb_edit_entry = entry
+        self._lb_edit_index = index
+        self._lb_edit_old_text = old_text
+
+        # Bind commit/cancel
+        entry.bind("<Return>", self._commit_ins_text_edit)
+        entry.bind("<Escape>", self._cancel_ins_text_edit)
+        entry.bind("<FocusOut>", self._commit_ins_text_edit)
+
+    def _commit_ins_text_edit(self, event=None):
+        if self._lb_edit_entry is None:
+            return
+        new_text = self._lb_edit_entry.get().strip()
+        old_text = self._lb_edit_old_text
+        try:
+            self._lb_edit_entry.destroy()
+        except Exception:
+            pass
+        self._lb_edit_entry = None
+        self._lb_edit_index = None
+
+        if not new_text or new_text == old_text:
+            # No change
+            return
+
+        # Record undo, then bulk-rename all instructions that had the old text
+        self._save_undo_checkpoint("bulk_rename_instruction_text")
+        for ins in self.doc.instructions:
+            if ins.text == old_text:
+                ins.text = new_text
+
+        # Refresh UI and canvas
+        self._refresh_lists()
+        self._redraw_all()
+
+    def _cancel_ins_text_edit(self, event=None):
+        if self._lb_edit_entry is not None:
+            try:
+                self._lb_edit_entry.destroy()
+            except Exception:
+                pass
+            self._lb_edit_entry = None
+            self._lb_edit_index = None
+            self._lb_edit_old_text = None
+
     # -------- Countdowns --------
     def on_add_countdown(self):
+        self._save_undo_checkpoint("add_countdown")
         self.doc.countdowns.append(Countdown(
             start_measure=int(self.c_start.get()),
             count_from=int(self.c_from.get()),
@@ -1102,6 +1309,7 @@ class DAWAnnotator(tk.Tk):
         idxs = list(self.c_list.curselection())
         if not idxs:
             return
+        self._save_undo_checkpoint("delete_countdown")
         for i in reversed(idxs):
             if 0 <= i < len(self.doc.countdowns):
                 del self.doc.countdowns[i]
@@ -1165,6 +1373,9 @@ class DAWAnnotator(tk.Tk):
             messagebox.showerror("YAML", f"Failed to load YAML: {e}")
             return
 
+        # Before replacing current document, checkpoint (so Cmd-Z returns to pre-load state)
+        self._save_undo_checkpoint("load_yaml")
+
         # Replace current document and refresh lists
         self.doc = new_doc
         self._refresh_lists()
@@ -1182,6 +1393,7 @@ class DAWAnnotator(tk.Tk):
         # Redraw canvas so rectangles appear
         self._redraw_all()
         messagebox.showinfo("YAML", f"Loaded annotations from\n{path}")
+        self._save_undo_checkpoint("post_load_yaml")
 
     def on_load_midi(self):
         path = filedialog.askopenfilename(filetypes=[("MIDI", "*.mid *.midi")])
@@ -1203,6 +1415,7 @@ class DAWAnnotator(tk.Tk):
         self.total_measures.set(max(total_measures, 32))
         print(f"[MIDI] events={len(ms.events)} tempo_changes={len(ms.tempo_changes)} duration={ms.duration_sec:.3f}s", flush=True)
         self._redraw_all()
+        self._save_undo_checkpoint("load_midi")
 
     def on_pick_sf2(self):
         path = filedialog.askopenfilename(filetypes=[("SoundFont", "*.sf2")])
