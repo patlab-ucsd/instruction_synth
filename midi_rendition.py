@@ -3,6 +3,31 @@ from pydub import AudioSegment
 import os
 import mido
 import tempfile
+import shutil
+import subprocess
+
+class FixedFluidSynth(FluidSynth):
+"""
+this patches the broken midi2audio function which no longer works with newer versions of FluidSynth, for example runtime version 2.5.3   
+"""
+    def midi_to_audio(self, midi_file, audio_file):
+        fluidsynth_bin = shutil.which("fluidsynth")
+        if fluidsynth_bin is None:
+            raise RuntimeError("Cannot find fluidsynth. Try: brew install fluid-synth")
+
+        cmd = [
+            fluidsynth_bin,
+            "-ni",
+            "-F", str(audio_file),
+            "-r", str(self.sample_rate),
+            str(self.sound_font),
+            str(midi_file),
+        ]
+
+        print("Running:")
+        print(" ".join(cmd))
+
+        subprocess.run(cmd, check=True)
 
 def examine_midi_msg(midi_file):
     """
@@ -23,9 +48,10 @@ def generate_mp3_simple(midi_file, soundfont):
     """
     render midi from ./midi folder and save the mp3 file to ./music folder
     """
+    print("generating mp3")
     mp3_file = f"{midi_file.replace('/midi/', '/music/')[:-4]}.mp3"
 
-    fluidsynth = FluidSynth(soundfont)
+    fluidsynth = FixedFluidSynth(soundfont)
     # render in wav
     wav_filename = f"{midi_file[:-4]}.wav"
     fluidsynth.midi_to_audio(midi_file, wav_filename)
@@ -219,7 +245,7 @@ def midi_add_simple_drum(midi_file, perc_inst = "woodblock"):
                 time_changes.append((msg.numerator,msg.denominator,current_tick))
         # mark the ending
         time_changes.append((last_numerator, last_denominator,current_tick))
-        print("TIME cHANGES", time_changes)
+        print("TIME CHANGES", time_changes)
         # add the percussion
         for i in range(len(time_changes)-1):
             numerator, denominator, current_tick = time_changes[i]
@@ -259,7 +285,7 @@ def midi_to_mp3(adjusted_midi_file, mp3_file):
 
     temp_wav = tempfile.NamedTemporaryFile(suffix='.wav', delete=True)
 
-    fluidsynth = FluidSynth(soundfont)
+    fluidsynth = FixedFluidSynth(soundfont)
     # render in wave
     fluidsynth.midi_to_audio(adjusted_midi_file, temp_wav.name)
 
