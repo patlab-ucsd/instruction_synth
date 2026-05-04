@@ -830,7 +830,22 @@ class DAWAnnotator(tk.Tk):
             "#f0e442",  # yellow
             "#0072b2",  # blue
             "#cc79a7",  # reddish purple
+            "#d55e00",  # vermillion
+            "#88cc33",  # bright green
+            "#44aa99",  # teal
+            "#aa4499",  # purple
+            "#117733",  # dark green
+            "#332288",  # indigo
+            "#ddcc77",  # sand
+            "#999933",  # olive
+            "#882255",  # wine
+            "#661100",  # brown
+            "#6699cc",  # muted blue
+            "#aa4466",  # rose
+            "#4477aa",  # medium blue
+            "#228833",  # medium green
         ]
+
         for idx, ins in enumerate(self.doc.instructions):
             color = palette[idx % len(palette)]
             for mstart in ins.measure_numbers:
